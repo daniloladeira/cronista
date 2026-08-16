@@ -1,0 +1,111 @@
+# Roadmap
+
+> **Versão:** 1.0 · **Última atualização:** 2026-08-12
+
+## 1. Ordem e critério
+
+Nove fases. Cada uma entrega algo utilizável e só está concluída quando seus casos de teste passam — **inclusive os de exceção** ([14-plano-de-testes.md](14-plano-de-testes.md) §8).
+
+| Fase | Entrega | Casos de uso | Testes |
+|---|---|---|---|
+| 1 | Infraestrutura e autenticação | UC-01 | CT-01 a CT-04, CT-38 a CT-40 |
+| 2 | Captura e envio | UC-02, UC-03, UC-10, UC-11 | CT-05 a CT-11, CT-33 a CT-35 |
+| 3 | Transcrição | UC-05 | CT-16 a CT-20, CT-36 |
+| 4 | Resumo | UC-06 | CT-21 a CT-24, CT-37 |
+| 5 | Consulta e busca | UC-07, UC-08 | CT-25 a CT-29 |
+| 6 | Importação de arquivo | UC-04 | CT-12 a CT-15 |
+| 7 | Retenção e exclusão | UC-09 | CT-30 a CT-32 |
+| 8 | Interface desktop | — | — |
+| 9 | Leitura remota | — | — |
+
+## 2. Detalhamento
+
+### Fase 1 · Infraestrutura e autenticação
+
+PostgreSQL em container, migração inicial com as quatro tabelas, FastAPI no ar, login com JWT.
+
+**Pronto quando:** `docker compose up -d` sobe o banco, `alembic upgrade head` cria o esquema, `meet login` devolve token, e um endpoint protegido recusa requisição sem token.
+
+**Fase de infraestrutura pura, sem funcionalidade visível.** É o custo de ter escolhido a API como centro do sistema ([ADR-0010](adr/0010-api-como-centro.md)), e é melhor pagá-lo de uma vez do que parcelado.
+
+### Fase 2 · Captura e envio
+
+O coração do sistema. Captura WASAPI em duas trilhas, escrita incremental em disco, registro na API, índice local de pendências e reconciliação.
+
+**Pronto quando:** uma reunião real é gravada em dois WAV corretos, aparece no banco, e **CT-08 passa** — a API derrubada no meio da gravação não custa o áudio.
+
+**Risco já eliminado:** a captura de loopback foi verificada nesta máquina antes do planejamento. A biblioteca enxerga a saída padrão e gravou 1 segundo real a 16 kHz mono.
+
+### Fase 3 · Transcrição
+
+Worker em processo separado, consumindo a fila do banco. Detecção de fala, transcrição por trilha, mesclagem cronológica.
+
+**Pronto quando:** uma reunião de 1 hora é transcrita em menos de 1 hora, com falantes corretos, e a linha de base de WER está medida.
+
+**Risco não eliminado — o maior do projeto.** `ctranslate2` com CUDA no Windows, convivendo com as dependências de LangChain no mesmo ambiente. Mitigação prevista: ambiente separado para o worker, que a arquitetura de processos distintos já torna barato ([07-arquitetura.md](07-arquitetura.md) §7).
+
+### Fase 4 · Resumo
+
+Cadeia LangChain com Ollama local, provedor remoto opcional, prompts versionados, tratamento de transcrição longa.
+
+**Pronto quando:** uma reunião real produz resumo com as quatro seções e responsável nas pendências, e a **rubrica comparativa contra o Notion AI está preenchida**.
+
+**Esta é a fase que responde se o projeto valeu a pena.** Até aqui, o sistema faz o que outros já fazem. É o resumo em português com vocabulário de domínio que sustenta a decisão de construir em vez de instalar o pronto.
+
+### Fase 5 · Consulta e busca
+
+Listagem, leitura de transcrição e resumos, busca com stemming de português.
+
+**Pronto quando:** buscar "decisão" encontra "decidimos" em reunião de semanas atrás, em menos de 1 segundo.
+
+**É a fase que transforma um monte de reuniões em acervo.** Sem busca, o valor decai com o tempo: ninguém relê a transcrição de três meses atrás procurando algo à mão.
+
+### Fase 6 · Importação de arquivo
+
+`meet importar`, conversão com ffmpeg, reaproveitando o endpoint da Fase 2.
+
+**Pronto quando:** um mp3 antigo vira reunião transcrita e resumida.
+
+**Fase barata por construção.** Toda a espinha já existe; o que entra é conversão de formato. O que ela **não** resolve: arquivo importado tem trilha única, então os segmentos ficam com falante `desconhecido`. Elevar isso exigiria diarização, decisão adiada em [ADR-0007](adr/0007-fonte-de-audio-plugavel.md).
+
+### Fase 7 · Retenção e exclusão
+
+Política por idade, compressão ou remoção de áudio, exclusão em cascata com confirmação.
+
+**Pronto quando:** áudio antigo é tratado conforme a política e reunião não transcrita **nunca** é tocada.
+
+### Fase 8 · Interface desktop
+
+PySide6 com ícone na bandeja, sobre a mesma API. Terá especificação própria.
+
+### Fase 9 · Leitura remota
+
+Interface de leitura acessível de outra máquina, pela rede privada.
+
+**Decisão em aberto:** Tailscale, LAN ou outra. Não bloqueia nada até aqui.
+
+## 3. Por que esta ordem
+
+| Escolha | Razão |
+|---|---|
+| Infraestrutura antes de tudo | Consequência da API como centro. Tentar adiar geraria retrabalho |
+| Captura na Fase 2, antes de transcrever | É a única etapa irreversível. Quanto antes estiver sólida, menos reunião se perde durante o desenvolvimento |
+| Transcrição antes de resumo | O resumo não tem entrada sem ela |
+| Busca depois do resumo | Sem acervo, não há o que buscar |
+| Importação depois da busca, apesar de barata | Nada depende dela, e ela depende de tudo |
+| Desktop por último entre as funcionais | A linha de comando já entrega o valor; a interface é conforto |
+
+## 4. Decisões em aberto
+
+Nenhuma bloqueia o início.
+
+| Em aberto | Quando decidir |
+|---|---|
+| **Nome do projeto** | Quando aparecer. Ver [16-nome.md](16-nome.md) |
+| Modelo do Ollama | Fase 4, medindo em português real |
+| Exposição na rede | Fase 9 |
+| Diarização em arquivos importados | Fase 6, se o resumo sofrer sem falante |
+
+## 5. Fora do roadmap
+
+Registrado para não voltar como suposição: multiusuário, bot em reunião, transcrição em tempo real, aplicativo móvel, integrações e tradução. Todos em [01-documento-de-visao.md](01-documento-de-visao.md) §8.

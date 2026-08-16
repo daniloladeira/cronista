@@ -1,0 +1,33 @@
+# PostgreSQL do projeto. Ver docs/adr/0003-postgres-como-banco.md
+#
+#   docker compose up -d
+#   docker compose logs -f db
+#   docker compose down          (mantém os dados no volume)
+#
+# Credenciais vêm do .env — copie de .env.example antes de subir.
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: meet-transcript-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # Necessário para o stemming de português da busca (docs/08-modelo-de-dados.md)
+      LANG: pt_BR.utf8
+    ports:
+      # Exposto apenas em localhost: o acesso remoto é pela API, nunca pelo banco.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    name: meet-transcript-pgdata
