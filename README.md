@@ -36,7 +36,7 @@ flowchart LR
 | Camada | Escolha |
 |---|---|
 | Captura | WASAPI com loopback, 16 kHz mono, duas trilhas |
-| Transcrição | faster-whisper `large-v3` quantizado, GPU local |
+| Transcrição | faster-whisper `large-v3` quantizado, em container com GPU via WSL2 |
 | Resumo | LangChain com Ollama local; provedor remoto opcional |
 | API | FastAPI, JWT de usuário único |
 | Banco | PostgreSQL com busca `tsvector` e stemming de português |
@@ -74,7 +74,7 @@ flowchart LR
 | [14 · Plano de Testes](docs/14-plano-de-testes.md) | 40 casos de teste, WER, rubrica de resumo |
 | [15 · Roadmap](docs/15-roadmap.md) | Nove fases com critério de pronto |
 | [16 · Nome](docs/16-nome.md) | Candidatos e procedimento de renomeação |
-| [ADRs](docs/adr/) | 13 decisões, cada uma com gatilho de reversão |
+| [ADRs](docs/adr/) | 14 decisões, cada uma com gatilho de reversão |
 
 ## Decisões
 

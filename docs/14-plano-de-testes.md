@@ -59,7 +59,7 @@ A captura não é automatizável de forma honesta: simular WASAPI testaria o sim
 
 | ID | Verifica |
 |---|---|
-| CT-16 | Reunião de 1 hora transcreve em menos de 1 hora (RNF-P01) |
+| CT-16 | Reunião de 1 hora transcreve em menos de 1 hora (RNF-P01). **Medir separadamente o tempo de leitura das trilhas** — é o custo da fronteira 9P e o gatilho de reversão do [ADR-0014](adr/0014-worker-em-container-com-gpu.md) |
 | CT-17 | Segmentos das duas trilhas saem mesclados em ordem, com falante correto |
 | CT-18 | Memória insuficiente marca falha e **preserva o áudio** |
 | CT-19 | Worker interrompido devolve a reunião à fila na inicialização seguinte |

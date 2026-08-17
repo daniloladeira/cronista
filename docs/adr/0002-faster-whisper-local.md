@@ -26,7 +26,7 @@ Transcrever **localmente** com `faster-whisper` (implementação do Whisper sobr
 
 **Positivas.** Custo recorrente zero. Nenhum áudio sai da máquina. Sem cota. Aproveita hardware ocioso.
 
-**Negativas.** Amarra o sistema a uma máquina com GPU — não roda em qualquer lugar. `ctranslate2` com CUDA no Windows tem dependências de biblioteca que podem conflitar com outros pacotes do ambiente; este é o **maior risco técnico ainda não validado do projeto**. Não traz diarização pronta, embora o ADR-0001 torne isso irrelevante na captura ao vivo.
+**Negativas.** Amarra o sistema a uma máquina com GPU — não roda em qualquer lugar. `ctranslate2` com CUDA no Windows tem dependências de biblioteca que podem conflitar com outros pacotes do ambiente — este era o **maior risco técnico do projeto**, e foi endereçado pelo [ADR-0014](0014-worker-em-container-com-gpu.md), que isola o worker em container. Não traz diarização pronta, embora o ADR-0001 torne isso irrelevante na captura ao vivo.
 
 ## Gatilho de reversão
 

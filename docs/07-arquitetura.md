@@ -97,24 +97,24 @@ flowchart TB
         subgraph WinProc["Processos Windows"]
             CLIP["Cliente / CLI"]
             APIP["API FastAPI<br/>uvicorn :8000"]
-            WKP["Worker de transcrição"]
             OLLP["Ollama :11434"]
         end
-        subgraph GPUN["RTX 4060 Laptop · 8 GB VRAM"]
-            WMODEL["Whisper large-v3<br/>int8_float16"]
-            LMODEL["Modelo de linguagem"]
-        end
+        FS[("%LOCALAPPDATA%\\meet-transcript<br/>recordings/")]
         subgraph WSL["WSL2 · Docker Engine"]
             PG[("PostgreSQL<br/>:5432")]
+            WKP["Worker de transcrição<br/>container com --gpus"]
         end
-        FS[("%LOCALAPPDATA%\\meet-transcript<br/>recordings/")]
+        subgraph GPUN["RTX 4060 Laptop · 8 GB VRAM"]
+            WMODEL["Whisper large-v3<br/>sob demanda"]
+            LMODEL["Modelo de linguagem"]
+        end
     end
 
     OUTRA["Outra máquina<br/>somente leitura"]
 
     CLIP --> FS
     CLIP -->|HTTP| APIP
-    WKP --> FS
+    WKP -.->|leitura · fronteira 9P| FS
     WKP --> WMODEL
     OLLP --> LMODEL
     APIP --> PG
@@ -123,7 +123,18 @@ flowchart TB
     OUTRA -.->|Tailscale ou LAN| APIP
 ```
 
-**Ponto de atenção de VRAM.** Whisper e o modelo de linguagem disputam os mesmos 8 GB. Se o resumo automático disparar enquanto o worker transcreve, os dois podem não caber. A mitigação está no ciclo do worker: o resumo automático só é acionado após a liberação do modelo de transcrição. Configuração e limites em [12-transcricao.md](12-transcricao.md).
+**O worker roda em container, não como processo Windows** ([ADR-0014](adr/0014-worker-em-container-com-gpu.md)). A razão é isolamento de dependência: `ctranslate2` exige versões específicas de CUDA e cuDNN, que a imagem carrega e o ambiente da API nunca vê. A GPU chega ao container pelo caminho paravirtualizado do WSL2, com o NVIDIA Container Toolkit.
+
+**A seta tracejada para o disco é o único ponto lento do desenho.** O acervo fica no Windows e o container o lê atravessando o compartilhamento 9P entre a máquina virtual e o hospedeiro. Isso custa segundos por trilha, e é aceito de propósito: guardar o áudio dentro do WSL apenas transferiria a lentidão para a **escrita**, que é a operação irreversível.
+
+**Ponto de atenção de VRAM — é a restrição que governa o desenho.** Whisper (4–5 GB) e o modelo de linguagem (5–6 GB) não cabem simultaneamente em 8 GB. **Transcrever e resumir são operações mutuamente exclusivas nesta máquina.**
+
+Duas consequências, ambas obrigatórias:
+
+1. O worker **carrega o modelo sob demanda e o libera após período ocioso**, em vez de mantê-lo residente. Prender 4–5 GB permanentemente economizaria cerca de vinte segundos de carregamento e custaria a memória que o resumo precisa.
+2. O resumo automático só dispara **depois** que a transcrição liberou o modelo.
+
+Configuração e limites em [12-transcricao.md](12-transcricao.md).
 
 ## 4. Fluxos
 
@@ -254,4 +265,4 @@ Consequência direta do princípio 2. Esta tabela é o contrato de degradação 
 | Cache | Se a busca deixar de responder sob 1 segundo |
 | Múltiplos usuários | Ver gatilho de reversão em [adr/0011](adr/0011-jwt-usuario-unico.md) |
 | Busca semântica | Se a busca textual se mostrar insuficiente. O PostgreSQL comporta `pgvector` sem troca de banco |
-| Separar o worker em venv próprio | Se `ctranslate2` conflitar com as dependências de LangChain. A arquitetura de processo separado já deixa isso barato |
+| Copiar áudio para dentro do WSL antes de transcrever | Se a fronteira 9P comprometer RNF-P01. Medido em CT-16, não presumido ([ADR-0014](adr/0014-worker-em-container-com-gpu.md)) |

@@ -141,6 +141,7 @@ Os fluxos de exceção são a parte da especificação com maior chance de virar
 | JWT com usuário único | [0011](adr/0011-jwt-usuario-unico.md) | RF-25 a RF-28, RNF-C06 |
 | **Gravação em disco antes da API** | [0012](adr/0012-gravacao-em-disco-antes-da-api.md) | **RNF-R01, RNF-R02** |
 | Mermaid para todos os diagramas | [0013](adr/0013-mermaid-para-diagramas.md) | — (decisão de documentação) |
+| Worker de transcrição em container com GPU | [0014](adr/0014-worker-em-container-com-gpu.md) | RNF-C03, RNF-P01, RNF-P04 |
 
 ---
 
@@ -166,4 +167,4 @@ Honestidade sobre o que a matriz **não** garante:
 | Requisitos não-funcionais | 22 | 20 verificáveis + 2 por revisão |
 | Casos de uso | 11 | 11 |
 | Fluxos de exceção | 20 | 20 |
-| Decisões técnicas | 13 | 13 |
+| Decisões técnicas | 14 | 14 |

@@ -42,7 +42,11 @@ Worker em processo separado, consumindo a fila do banco. Detecção de fala, tra
 
 **Pronto quando:** uma reunião de 1 hora é transcrita em menos de 1 hora, com falantes corretos, e a linha de base de WER está medida.
 
-**Risco não eliminado — o maior do projeto.** `ctranslate2` com CUDA no Windows, convivendo com as dependências de LangChain no mesmo ambiente. Mitigação prevista: ambiente separado para o worker, que a arquitetura de processos distintos já torna barato ([07-arquitetura.md](07-arquitetura.md) §7).
+**Pré-requisito de ambiente:** NVIDIA Container Toolkit instalado no WSL. A GPU já está visível dentro do WSL nesta máquina; o toolkit é o que falta para o container alcançá-la.
+
+**O maior risco do projeto foi endereçado antes da implementação.** `ctranslate2` com CUDA convivendo com as dependências de LangChain deixou de ser problema com o worker em container ([ADR-0014](adr/0014-worker-em-container-com-gpu.md)): as bibliotecas de CUDA ficam na imagem e o ambiente da API nunca as vê.
+
+**O risco que sobra é outro, e é medível:** o container lê o áudio atravessando a fronteira 9P entre WSL e Windows, o que é mais lento que leitura local. Se comprometer RNF-P01, a saída é copiar a trilha para dentro do WSL antes de processar. **CT-16 responde isso com número, não com suposição.**
 
 ### Fase 4 · Resumo
 

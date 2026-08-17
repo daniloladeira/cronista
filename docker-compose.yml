@@ -28,6 +28,43 @@ services:
       timeout: 5s
       retries: 5
 
+  # ─────────────────────────────────────────────────────────────────────────
+  # Worker de transcrição — ADR-0014. Entra na Fase 3; ainda não há imagem.
+  # Descomentar quando o código existir.
+  #
+  # Requer NVIDIA Container Toolkit instalado no WSL:
+  #   sudo apt install -y nvidia-container-toolkit
+  #   sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker
+  #
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: worker/Dockerfile
+  #   container_name: meet-transcript-worker
+  #   restart: unless-stopped
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   environment:
+  #     DATABASE_URL: ${DATABASE_URL}
+  #     WHISPER_MODEL: ${WHISPER_MODEL}
+  #     WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE}
+  #     WHISPER_IDLE_UNLOAD_SECONDS: ${WHISPER_IDLE_UNLOAD_SECONDS}
+  #   volumes:
+  #     # Acervo montado somente-leitura. Fica no Windows de propósito:
+  #     # gravar é irreversível, ler é repetível (ADR-0012, ADR-0014).
+  #     - ${DATA_ROOT}:/data:ro
+  #     - whisper-models:/models
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+
 volumes:
   pgdata:
     name: meet-transcript-pgdata
+  # whisper-models:
+  #   name: meet-transcript-whisper-models
