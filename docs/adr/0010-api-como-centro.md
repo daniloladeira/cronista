@@ -28,10 +28,10 @@ Exceção única, registrada em ADR próprio: **a captura de áudio não depende
 
 **Positivas.** Um único caminho para o estado, sem divergência entre interfaces. A interface desktop e a leitura remota consomem o mesmo contrato, já pronto. Autenticação num lugar só. O esquema publicado pelo FastAPI documenta a API sem risco de divergir do código.
 
-**Negativas.** A Fase 1 vira infraestrutura pura, sem funcionalidade visível — o custo é pago antes de qualquer valor aparecer. Mais código: esquemas de requisição e resposta, cliente HTTP, tratamento de erro de rede. Rede no caminho de operações que rodam na mesma máquina. E, sem a exceção do ADR-0012, tornaria a gravação refém de um serviço.
+**Negativas.** A Fase 1 vira infraestrutura pura, sem funcionalidade visível: o custo é pago antes de qualquer valor aparecer. Mais código: esquemas de requisição e resposta, cliente HTTP, tratamento de erro de rede. Rede no caminho de operações que rodam na mesma máquina. E, sem a exceção do ADR-0012, tornaria a gravação refém de um serviço.
 
 ## Gatilho de reversão
 
-Se o custo de manter a camada HTTP para operações locais se mostrar desproporcional — sintoma típico: toda funcionalidade nova exigindo tocar em três lugares para expor o que já existe no domínio. Nesse caso, a linha de comando poderia voltar a chamar `core` diretamente, mantendo a API apenas para acesso remoto.
+Se o custo de manter a camada HTTP para operações locais se mostrar desproporcional. Sintoma típico: toda funcionalidade nova exigindo tocar em três lugares para expor o que já existe no domínio. Nesse caso, a linha de comando poderia voltar a chamar `core` diretamente, mantendo a API apenas para acesso remoto.
 
 Como `core` permanece um pacote independente que não importa `api` ([07-arquitetura.md](../07-arquitetura.md) §2.2), essa reversão continua possível.

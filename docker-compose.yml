@@ -4,7 +4,7 @@
 #   docker compose logs -f db
 #   docker compose down          (mantém os dados no volume)
 #
-# Credenciais vêm do .env — copie de .env.example antes de subir.
+# Credenciais vêm do .env, copie de .env.example antes de subir.
 
 services:
   db:
@@ -29,7 +29,7 @@ services:
       retries: 5
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Worker de transcrição — ADR-0014. Entra na Fase 3; ainda não há imagem.
+  # Worker de transcrição (ADR-0014). Entra na Fase 3; ainda não há imagem.
   # Descomentar quando o código existir.
   #
   # Requer NVIDIA Container Toolkit instalado no WSL:

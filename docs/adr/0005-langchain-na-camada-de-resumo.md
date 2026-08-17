@@ -1,6 +1,6 @@
 # ADR-0005 · LangChain na camada de resumo
 
-- **Status:** aceito — **contra recomendação técnica, por decisão deliberada**
+- **Status:** aceito. **Contra recomendação técnica, por decisão deliberada**
 - **Data:** 2026-08-12
 - **Requisitos relacionados:** RF-18, RNF-S04
 
@@ -14,7 +14,7 @@ Surgiu a pergunta de usar LangChain. A recomendação técnica foi **contra**, c
 2. Árvore de dependências pesada, com risco concreto de conflito de versão com `ctranslate2` no mesmo ambiente.
 3. Churn de API conhecido entre versões, num projeto pessoal a que se volta depois de meses.
 
-O que o framework de fato entrega neste caso é a troca de provedor com interface única — o que um `Protocol` de trinta linhas também entregaria.
+O que o framework de fato entrega neste caso é a troca de provedor com interface única, o que um `Protocol` de trinta linhas também entregaria.
 
 **O usuário decidiu adotar LangChain mesmo assim**, com a razão explícita de aprender o framework. A camada de resumo é o ponto de menor risco do sistema para isso: não é o caminho irreversível, não é o gargalo de desempenho, e está isolada atrás de uma fronteira clara.
 
@@ -26,7 +26,7 @@ Usar **LangChain** na camada de resumo, com as integrações de Ollama e do prov
 
 **Positivas.** Troca de provedor por configuração. Estratégias prontas para transcrição maior que a janela de contexto. Aprendizado de um framework difundido, em contexto real e de baixo risco.
 
-**Negativas.** Dependências substancialmente maiores do que a tarefa exige. Risco de conflito com `ctranslate2` — já previsto e mitigado pela arquitetura de processos separados ([07-arquitetura.md](../07-arquitetura.md) §7). Abstração entre o código e a API do modelo, que atrapalha exatamente quando o resumo em português sair ruim e for preciso entender por quê. Exposição a quebras de API entre versões.
+**Negativas.** Dependências substancialmente maiores do que a tarefa exige. Risco de conflito com `ctranslate2`, já previsto e mitigado pela arquitetura de processos separados ([07-arquitetura.md](../07-arquitetura.md) §7). Abstração entre o código e a API do modelo, que atrapalha exatamente quando o resumo em português sair ruim e for preciso entender por quê. Exposição a quebras de API entre versões.
 
 ## Gatilho de reversão
 

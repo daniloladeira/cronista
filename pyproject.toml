@@ -5,27 +5,27 @@ version = "0.1.0"
 description = "Grava, transcreve e resume reunioes localmente"
 requires-python = ">=3.13,<3.14"   # ADR-0008
 dependencies = [
-    # Captura de áudio — ADR-0001
+    # Captura de áudio (ADR-0001)
     "soundcard>=0.4.6",
     "soundfile>=0.13",
     "numpy>=2.0",
-    # Linha de comando — ADR-0006
+    # Linha de comando (ADR-0006)
     "typer>=0.15",
     "httpx>=0.28",
-    # API e autenticação — ADR-0010, ADR-0011
+    # API e autenticação (ADR-0010, ADR-0011)
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
     "pydantic-settings>=2.7",
     "pyjwt>=2.10",
     "argon2-cffi>=23.1",
     "python-multipart>=0.0.20",
-    # Banco — ADR-0003, ADR-0009
+    # Banco (ADR-0003, ADR-0009)
     "sqlalchemy>=2.0",
     "alembic>=1.14",
     "psycopg[binary]>=3.2",
-    # Transcrição — ADR-0002
+    # Transcrição (ADR-0002)
     "faster-whisper>=1.1",
-    # Resumo — ADR-0005
+    # Resumo (ADR-0005)
     "langchain-core>=0.3",
     "langchain-ollama>=0.2",
     "langchain-anthropic>=0.3",
@@ -35,7 +35,7 @@ dependencies = [
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.25",
-    "jiwer>=3.1",       # métrica de WER — docs/14-plano-de-testes.md
+    "jiwer>=3.1",       # métrica de WER, docs/14-plano-de-testes.md
 ]
 
 [project.scripts]

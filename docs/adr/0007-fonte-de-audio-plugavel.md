@@ -6,7 +6,7 @@
 
 ## Contexto
 
-A gravação ao vivo era o único caminho previsto. O usuário manifestou depois a intenção de também importar arquivos de áudio já existentes — "mas isso é pra depois".
+A gravação ao vivo era o único caminho previsto. O usuário manifestou depois a intenção de também importar arquivos de áudio já existentes: "mas isso é pra depois".
 
 O ponto: **adiar a implementação é barato; adiar a abstração não é.** Se o modelo de dados e o pipeline forem escritos presumindo captura ao vivo, a importação depois exige migração de esquema com dados reais e reescrita do pipeline.
 
@@ -17,7 +17,7 @@ Três coisas quebrariam: `meetings` sem indicação de origem; falante como enum
 Abstrair a fonte de áudio **desde a primeira versão**, mesmo com a importação implementada só na Fase 6:
 
 1. `meetings.source` com valores `capture` e `import`.
-2. `speaker` como texto livre, não enumeração — abre espaço para `desconhecido` e para identificação nominal futura.
+2. `speaker` como texto livre, não enumeração, abre espaço para `desconhecido` e para identificação nominal futura.
 3. Pipeline de transcrição operando sobre uma **lista** de trilhas, de tamanho variável.
 4. Entidade `Track` própria, em vez de colunas fixas `mic_path` e `system_path`.
 
@@ -27,7 +27,7 @@ Abstrair a fonte de áudio **desde a primeira versão**, mesmo com a importaçã
 
 **Negativas.** Complexidade ligeiramente maior desde o início: uma tabela a mais e um laço onde caberiam duas variáveis. Custo real, mas pequeno, e pago uma vez.
 
-**Não resolvido.** Arquivo importado tem trilha única e, portanto, falante `desconhecido`. A separação por origem de sinal — o truque que dispensa diarização no ADR-0001 — não existe aqui.
+**Não resolvido.** Arquivo importado tem trilha única e, portanto, falante `desconhecido`. A separação por origem de sinal, o truque que dispensa diarização no ADR-0001, não existe aqui.
 
 ## Gatilho de reversão
 

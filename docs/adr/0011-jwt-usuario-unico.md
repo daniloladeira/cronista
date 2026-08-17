@@ -8,7 +8,7 @@
 
 Com a API no centro ([ADR-0010](0010-api-como-centro.md)) e a intenção de acessá-la de outra máquina, um serviço sem autenticação seria um serviço aberto.
 
-A pergunta seguinte era o alcance: proteger o acesso de uma pessoa, ou preparar o terreno para várias. O usuário foi explícito — **só ele**, e o acesso remoto é de leitura.
+A pergunta seguinte era o alcance: proteger o acesso de uma pessoa, ou preparar o terreno para várias. O usuário foi explícito: **só ele**, e o acesso remoto é de leitura.
 
 Isso importa porque a diferença é grande. Multiusuário exige tabela de usuários, coluna de propriedade em cada reunião, filtro em toda consulta e cadastro. Usuário único não exige nada disso.
 
@@ -30,7 +30,7 @@ A API não é exposta à internet aberta: rede privada ou local.
 
 **Positivas.** Implementação pequena e fácil de acertar. Sem tela de cadastro, sem recuperação de senha, sem verificação de e-mail. Nenhuma consulta precisa filtrar por dono. Token expira, ao contrário de chave fixa.
 
-**Negativas.** Uma segunda pessoa não pode usar o sistema sem migração. Não há revogação de token individual — invalidar tudo exige trocar o segredo. Recuperar senha é editar um arquivo. A postura de segurança **depende** de a API não estar exposta publicamente: se isso mudar, faltam limite de tentativas, HTTPS obrigatório e auditoria.
+**Negativas.** Uma segunda pessoa não pode usar o sistema sem migração. Não há revogação de token individual: invalidar tudo exige trocar o segredo. Recuperar senha é editar um arquivo. A postura de segurança **depende** de a API não estar exposta publicamente: se isso mudar, faltam limite de tentativas, HTTPS obrigatório e auditoria.
 
 ## Gatilho de reversão
 
