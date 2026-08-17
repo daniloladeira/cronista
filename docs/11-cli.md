@@ -1,13 +1,13 @@
 # Linha de Comando · Contrato
 
-> **Versão:** 1.0 · **Última atualização:** 2026-08-12
-> Decisão correspondente: [0006](adr/0006-cli-antes-de-desktop.md)
+> **Versão:** 1.1 · **Última atualização:** 2026-08-17
+> Decisões correspondentes: [0006](adr/0006-cli-antes-de-desktop.md), [0015](adr/0015-rich-como-apresentacao-cli.md)
 
 ## 1. Papel
 
 A linha de comando é a primeira interface, e serve de contrato para a interface desktop que virá depois (Fase 8). Tudo que ela faz, faz chamando a API, exceto capturar áudio e listar dispositivos, que são locais por natureza.
 
-O executável provisório chama-se `cronista`. Muda quando o projeto ganhar nome ([16-nome.md](16-nome.md)).
+O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 
 ## 2. Comandos
 
@@ -69,6 +69,8 @@ O padrão: **o que aconteceu, de quem é a falha, o que fazer**. Nunca só a exc
 
 ## 6. O que este documento não fixa
 
-Nomes exatos de flag, formato das tabelas de saída, cores e texto literal das mensagens. Isso se acerta melhor escrevendo e usando.
+Nomes exatos de flag, formato das tabelas de saída, texto literal das mensagens. Isso se acerta melhor escrevendo e usando.
+
+Aparência (cor, animação, barra de gradiente) é tratada à parte, em [17-identidade-visual-cli.md](17-identidade-visual-cli.md), para não misturar comportamento com apresentação.
 
 O que está fixado é o que precisa ser decidido antes: quais comandos existem, **quais funcionam offline** e como o programa comunica falha.

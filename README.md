@@ -74,7 +74,8 @@ flowchart LR
 | [14 · Plano de Testes](docs/14-plano-de-testes.md) | 40 casos de teste, WER, rubrica de resumo |
 | [15 · Roadmap](docs/15-roadmap.md) | Nove fases com critério de pronto |
 | [16 · Nome](docs/16-nome.md) | Candidatos e procedimento de renomeação |
-| [ADRs](docs/adr/) | 14 decisões, cada uma com gatilho de reversão |
+| [17 · Identidade Visual e Animação do CLI](docs/17-identidade-visual-cli.md) | Rich, barras de gradiente, papéis semânticos de cor |
+| [ADRs](docs/adr/) | 15 decisões, cada uma com gatilho de reversão |
 
 ## Decisões
 

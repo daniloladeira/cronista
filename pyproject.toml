@@ -1,4 +1,3 @@
-# Nome provisório. Ver docs/16-nome.md
 [project]
 name = "cronista"
 version = "0.1.0"
@@ -9,9 +8,10 @@ dependencies = [
     "soundcard>=0.4.6",
     "soundfile>=0.13",
     "numpy>=2.0",
-    # Linha de comando (ADR-0006)
+    # Linha de comando (ADR-0006, ADR-0015)
     "typer>=0.15",
     "httpx2>=2.10",  # httpx está sem manutenção desde 2024; testclient do Starlette exige httpx2
+    "rich>=13.9",
     # API e autenticação (ADR-0010, ADR-0011)
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
