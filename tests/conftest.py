@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from cronista.api import security
 from cronista.api.main import app
+from cronista.api.routes.meetings import get_data_root
 from cronista.core.config import DatabaseSettings
 from cronista.core.db import get_db
 from cronista.core.models import Base
@@ -55,15 +56,20 @@ def db_session(test_engine) -> Generator[Session, None, None]:
 
 
 @pytest.fixture()
-def client(db_session: Session) -> Generator[TestClient, None, None]:
+def client(db_session: Session, tmp_path) -> Generator[TestClient, None, None]:
     def _override_get_db() -> Generator[Session, None, None]:
         yield db_session
 
     app.dependency_overrides[get_db] = _override_get_db
+    # data_root aponta pro diretório temporário do teste, não pro real do
+    # usuário — register_track confere existência de arquivo, e o teste
+    # não deve depender nem sujar o acervo de verdade.
+    app.dependency_overrides[get_data_root] = lambda: str(tmp_path)
     try:
         yield TestClient(app)
     finally:
         app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(get_data_root, None)
 
 
 @pytest.fixture()

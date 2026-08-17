@@ -34,6 +34,7 @@ classDiagram
         +str source
         +str host
         +str audio_dir
+        +int expected_tracks
         +str audio_state
         +str status
         +str error
@@ -43,6 +44,7 @@ classDiagram
         +duration() timedelta
         +is_transcribable() bool
         +is_summarizable() bool
+        +has_all_tracks() bool
     }
     class Track {
         +UUID id
@@ -93,6 +95,7 @@ CREATE TABLE meetings (
     source       text        NOT NULL CHECK (source IN ('capture', 'import')),
     host         text        NOT NULL,
     audio_dir    text        NOT NULL,
+    expected_tracks integer  NOT NULL,
     audio_state  text        NOT NULL DEFAULT 'original'
                              CHECK (audio_state IN ('original', 'compressed', 'removed')),
     status       text        NOT NULL
@@ -251,6 +254,7 @@ erDiagram
         text        source "capture | import"
         text        host
         text        audio_dir "relativo à raiz"
+        integer     expected_tracks
         text        audio_state "original | compressed | removed"
         text        status
         text        error

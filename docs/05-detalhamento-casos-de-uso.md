@@ -317,7 +317,7 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 | **Pós-condições** | Reunião e trilhas registradas; estado `gravada` |
 
 **FP**
-1. O cliente registra a reunião na API com título, instantes, duração, origem e máquina.
+1. O cliente registra a reunião na API com título, instantes, duração, origem, máquina, diretório de áudio e quantas trilhas virão.
 2. A API cria a reunião em estado `registering` (existe no banco, trilhas ainda pendentes) e devolve o identificador.
 3. Para cada trilha, o cliente envia o arquivo associando-o à reunião e ao falante correspondente.
 4. A API armazena a referência da trilha por caminho relativo (RF-07).
@@ -329,7 +329,7 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 
 **FE-02. Falha no meio do envio das trilhas.** A reunião já existe no banco em `registering`, mas com trilhas incompletas. O cliente marca a pendência local como `falha_envio`, distinta de `pendente_envio` porque o identificador da reunião já existe. UC-11 reenvia apenas as trilhas faltantes.
 
-**FE-03. Trilha excede o limite aceito.** A API informa o limite. O cliente mantém o arquivo local e reporta, sem descartá-lo.
+**FE-03. Referência de trilha inválida.** A API não encontra o arquivo no caminho informado (`DATA_ROOT` mal configurado, ou o cliente referenciou o caminho errado). Responde 422, sem criar o registro da trilha. O arquivo local do cliente não é afetado — ele continua existindo em disco, só o registro na API que falhou.
 
 **Requisitos especiais.** O envio é sempre posterior à gravação completa em disco (RN-08). Este caso de uso jamais é pré-requisito para iniciar ou manter uma captura.
 

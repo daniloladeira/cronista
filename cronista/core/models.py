@@ -41,6 +41,7 @@ class Meeting(Base):
     source: Mapped[str] = mapped_column(Text, nullable=False)
     host: Mapped[str] = mapped_column(Text, nullable=False)
     audio_dir: Mapped[str] = mapped_column(Text, nullable=False)
+    expected_tracks: Mapped[int] = mapped_column(Integer, nullable=False)
     audio_state: Mapped[str] = mapped_column(Text, nullable=False, server_default="original")
     status: Mapped[str] = mapped_column(Text, nullable=False)
     error: Mapped[str | None] = mapped_column(Text)
@@ -80,6 +81,12 @@ class Meeting(Base):
         if self.duration_ms is None:
             return None
         return timedelta(milliseconds=self.duration_ms)
+
+    def has_all_tracks(self) -> bool:
+        # UC-10 passo 5: reunião vira 'recorded' só quando todas as trilhas
+        # esperadas chegaram. Contagem, não a palavra do cliente sobre qual
+        # é "a última" — resiliente a reenvio (UC-11).
+        return len(self.tracks) >= self.expected_tracks
 
     def is_transcribable(self) -> bool:
         # RN-06: só entra em transcrição a partir de 'recorded' ou 'transcription_failed'.

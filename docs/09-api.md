@@ -6,10 +6,12 @@
 ## 1. Convenções
 
 - Base: `/api/v1`
-- Corpo em JSON, exceto envio de áudio (`multipart/form-data`)
+- Corpo em JSON, sempre — inclusive registro de trilha (ver nota abaixo)
 - Todos os endpoints exigem `Authorization: Bearer <token>`, exceto `/auth/login` e `/health` (RN-10)
 - Instantes em ISO 8601, UTC
 - Identificadores em UUID
+
+**Nenhum áudio trafega pela API.** Cliente e API rodam na mesma máquina (RE-01) e compartilham a mesma raiz de armazenamento (`DATA_ROOT`). "Enviar uma trilha" significa registrar a **referência** ao arquivo que o cliente já escreveu em disco (RN-08) — caminho relativo, não os bytes. Transferir 230 MB/hora por HTTP quando os dois processos já enxergam o mesmo disco seria duplicação sem propósito. Isso deixa de valer se a API algum dia rodar em outra máquina — não é o caso hoje, e não está no roadmap (Fase 9 é leitura remota, não captura remota).
 
 ## 2. Endpoints
 
@@ -52,9 +54,9 @@
 
 Somente o que precisa estar fixado antes do código.
 
-**Registro de reunião** (`POST /meetings`) recebe título, origem (`capture` ou `import`), máquina, instante de início, instante de término e duração. Devolve o identificador e o estado inicial.
+**Registro de reunião** (`POST /meetings`) recebe título, origem (`capture` ou `import`), máquina, diretório de áudio (relativo a `DATA_ROOT`), instante de início, instante de término, duração, e **quantas trilhas virão** (`expected_tracks`: 2 para captura, 1 para importação). Devolve o identificador e o estado inicial (`registering`).
 
-**Envio de trilha** (`POST /meetings/{id}/tracks`) recebe o arquivo, o falante (`voce`, `outros` ou `desconhecido`), taxa de amostragem, canais e, opcionalmente, o dispositivo de origem.
+**Registro de trilha** (`POST /meetings/{id}/tracks`) recebe o caminho do arquivo (relativo ao diretório da reunião), o falante (`voce`, `outros` ou `desconhecido`), taxa de amostragem, canais e, opcionalmente, o dispositivo de origem. A API confere que o arquivo existe no caminho informado antes de aceitar. Recebida a última trilha esperada (contagem bate com `expected_tracks`), a reunião passa de `registering` para `recorded`, elegível a transcrição (UC-05).
 
 **Transcrição** (`GET /meetings/{id}/transcript`) devolve a lista de segmentos já mesclada e ordenada, cada um com falante, início, fim e texto. A mesclagem é do servidor: o cliente nunca recebe trilhas separadas para juntar.
 
@@ -68,8 +70,7 @@ Somente o que precisa estar fixado antes do código.
 | `401` | Token ausente, inválido ou expirado | Dispara renovação automática no cliente |
 | `404` | Reunião inexistente | |
 | `409` | Operação incompatível com o estado atual | Ex.: resumir reunião não transcrita (RN-07) |
-| `413` | Trilha excede o limite aceito | Cliente preserva o arquivo local (UC-10, FE-03) |
-| `422` | Validação de esquema | |
+| `422` | Validação de esquema, ou arquivo referenciado não existe no caminho informado | UC-10, FE-03 (atualizado — não é mais limite de tamanho, é referência inválida) |
 | `503` | Dependência externa indisponível | Ex.: provedor de LLM fora do ar (UC-06, FE-01) |
 
 **`409` e `503` carregam a maior parte do valor.** São eles que distinguem "você pediu algo fora de hora" de "algo externo falhou", a distinção que RNF-U03 exige que o usuário consiga fazer.
