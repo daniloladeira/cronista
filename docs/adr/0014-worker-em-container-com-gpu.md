@@ -22,11 +22,11 @@ A restrição que governa o desenho. Os valores da primeira linha são **medidos
 
 | Item | VRAM |
 |---|---|
-| **Linha de base do Windows** (desktop, navegador, editor) | **~1,5–2 GB · medido** |
+| **Linha de base do Windows** (desktop, navegador, editor) | **~1,5 a 2 GB · medido** |
 | Total da RTX 4060 Laptop | 8,0 GB |
 | **Disponível de fato** | **~6,3 GB** |
-| Whisper `large-v3` int8_float16 | 4–5 GB (estimado) |
-| Modelo de linguagem 8B quantizado | 5–6 GB (estimado) |
+| Whisper `large-v3` int8_float16 | 4 a 5 GB (estimado) |
+| Modelo de linguagem 8B quantizado | 5 a 6 GB (estimado) |
 
 Duas conclusões:
 
@@ -54,7 +54,7 @@ A escolha decorre do [ADR-0012](0012-gravacao-em-disco-antes-da-api.md): gravar 
 |---|---|
 | Processo nativo em ambiente virtual próprio | Não isola bibliotecas de CUDA, que são do sistema. Mantém o risco de pé |
 | Máquina virtual completa | Não obtém a GPU nesta máquina |
-| Container com modelo residente | Prende 4–5 GB dos 8 GB permanentemente, para economizar ~20 s de carregamento |
+| Container com modelo residente | Prende 4 a 5 GB dos 8 GB permanentemente, para economizar ~20 s de carregamento |
 | Acervo dentro do WSL | Transfere a lentidão para a escrita, que é a operação irreversível |
 
 ## Consequências

@@ -5,7 +5,7 @@
 
 ## Convenções
 
-- **FP** — fluxo principal · **FA** — fluxo alternativo · **FE** — fluxo de exceção · **RN** — regra de negócio
+- **FP**: fluxo principal · **FA**: fluxo alternativo · **FE**: fluxo de exceção · **RN**: regra de negócio
 - Estados da reunião: `gravando`, `pendente_envio`, `gravada`, `transcrevendo`, `transcrita`, `resumida`, e os de falha `falha_envio`, `falha_transcricao`, `falha_resumo`
 - "Cliente" designa o processo local de captura e linha de comando; "API" designa o serviço; "Worker" designa o processo de transcrição
 
@@ -46,13 +46,13 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 4. A API emite token de acesso de validade curta e token de renovação.
 5. O cliente armazena os tokens no perfil do usuário do sistema operacional.
 
-**FA-01 — Renovação automática.** Em qualquer operação, se o token de acesso estiver expirado e houver token de renovação válido, o cliente renova de forma transparente e repete a operação original, sem pedir senha.
+**FA-01. Renovação automática.** Em qualquer operação, se o token de acesso estiver expirado e houver token de renovação válido, o cliente renova de forma transparente e repete a operação original, sem pedir senha.
 
-**FE-01 — Credencial inválida.** A API responde 401. O cliente informa que usuário ou senha estão incorretos, sem distinguir qual — para não revelar a existência do usuário. Nenhum token é gravado.
+**FE-01. Credencial inválida.** A API responde 401. O cliente informa que usuário ou senha estão incorretos, sem distinguir qual, para não revelar a existência do usuário. Nenhum token é gravado.
 
-**FE-02 — Token de renovação expirado.** O cliente descarta os tokens e solicita autenticação completa.
+**FE-02. Token de renovação expirado.** O cliente descarta os tokens e solicita autenticação completa.
 
-**FE-03 — API inacessível.** O cliente informa que o serviço não respondeu e indica a verificação do container. Comandos que operam offline (UC-02, UC-03) permanecem disponíveis.
+**FE-03. API inacessível.** O cliente informa que o serviço não respondeu e indica a verificação do container. Comandos que operam offline (UC-02, UC-03) permanecem disponíveis.
 
 **Requisitos especiais.** A senha nunca é registrada em log nem gravada em disco. O armazenamento do token segue [10-autenticacao.md](10-autenticacao.md).
 
@@ -72,9 +72,9 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 2. O cliente consulta o subsistema de áudio do sistema operacional.
 3. O cliente apresenta os dispositivos de entrada e de saída, destacando os padrões e indicando qual saída será usada para loopback.
 
-**FE-01 — Nenhum dispositivo de entrada.** O cliente informa que não há microfone disponível e adverte que a gravação capturaria apenas a trilha `outros`.
+**FE-01. Nenhum dispositivo de entrada.** O cliente informa que não há microfone disponível e adverte que a gravação capturaria apenas a trilha `outros`.
 
-**FE-02 — Loopback indisponível na saída padrão.** O cliente informa que o dispositivo de saída não expõe captura de loopback e sugere selecionar outro. Sem loopback não há trilha `outros`, o que inviabiliza o propósito da gravação.
+**FE-02. Loopback indisponível na saída padrão.** O cliente informa que o dispositivo de saída não expõe captura de loopback e sugere selecionar outro. Sem loopback não há trilha `outros`, o que inviabiliza o propósito da gravação.
 
 ---
 
@@ -99,17 +99,17 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 8. **Inclui UC-10** para registrar a reunião e as trilhas.
 9. O cliente informa a localização dos arquivos e o identificador da reunião.
 
-**FA-01 — Sem título.** Não informado título, o cliente gera um a partir da data e hora de início. O usuário pode renomear depois.
+**FA-01. Sem título.** Não informado título, o cliente gera um a partir da data e hora de início. O usuário pode renomear depois.
 
-**FA-02 — Dispositivo explícito.** O usuário indica dispositivo de entrada ou de saída diferente do padrão; o cliente usa o indicado.
+**FA-02. Dispositivo explícito.** O usuário indica dispositivo de entrada ou de saída diferente do padrão; o cliente usa o indicado.
 
-**FE-01 — API indisponível no passo 8.** *Este é o fluxo de exceção mais importante do sistema.* Os arquivos de áudio já estão íntegros em disco. O cliente registra a reunião localmente como `pendente_envio`, informa ao usuário que o áudio está salvo e que o registro será concluído depois, e **encerra com sucesso**. A recuperação ocorre em UC-11. Atende RNF-R01 e RNF-R02.
+**FE-01. API indisponível no passo 8.** *Este é o fluxo de exceção mais importante do sistema.* Os arquivos de áudio já estão íntegros em disco. O cliente registra a reunião localmente como `pendente_envio`, informa ao usuário que o áudio está salvo e que o registro será concluído depois, e **encerra com sucesso**. A recuperação ocorre em UC-11. Atende RNF-R01 e RNF-R02.
 
-**FE-02 — Dispositivo desaparece durante a gravação.** Situação real: fone desconectado no meio da reunião. O cliente encerra a trilha afetada preservando o que foi gravado, alerta o usuário de forma visível e **continua gravando a outra trilha**. A reunião prossegue com trilha única.
+**FE-02. Dispositivo desaparece durante a gravação.** Situação real: fone desconectado no meio da reunião. O cliente encerra a trilha afetada preservando o que foi gravado, alerta o usuário de forma visível e **continua gravando a outra trilha**. A reunião prossegue com trilha única.
 
-**FE-03 — Disco sem espaço.** O cliente interrompe a gravação, preserva o que já foi escrito, e informa o espaço necessário. O material parcial permanece utilizável.
+**FE-03. Disco sem espaço.** O cliente interrompe a gravação, preserva o que já foi escrito, e informa o espaço necessário. O material parcial permanece utilizável.
 
-**FE-04 — Sinal ausente em uma trilha durante todo o período.** Ao encerrar, o cliente adverte que a trilha não registrou sinal e sugere verificar o dispositivo. Não impede o registro — o áudio existente continua válido.
+**FE-04. Sinal ausente em uma trilha durante todo o período.** Ao encerrar, o cliente adverte que a trilha não registrou sinal e sugere verificar o dispositivo. Não impede o registro: o áudio existente continua válido.
 
 **Requisitos especiais.** A captura escreve em disco de forma incremental, não acumulando a reunião em memória (RNF-P03). O processamento durante a gravação limita-se ao necessário para escrever e medir sinal (RNF-P04).
 
@@ -132,15 +132,15 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 4. O cliente cria o diretório da reunião e grava a trilha convertida, com falante `desconhecido` (RN-02).
 5. **Inclui UC-10**, registrando a reunião com origem `importação`.
 
-**FA-01 — Origem em vídeo.** O cliente extrai apenas a faixa de áudio; o vídeo é descartado.
+**FA-01. Origem em vídeo.** O cliente extrai apenas a faixa de áudio; o vídeo é descartado.
 
-**FE-01 — Formato não suportado ou arquivo corrompido.** O cliente informa o formato detectado e a lista de formatos aceitos. Nada é registrado.
+**FE-01. Formato não suportado ou arquivo corrompido.** O cliente informa o formato detectado e a lista de formatos aceitos. Nada é registrado.
 
-**FE-02 — Arquivo sem faixa de áudio.** O cliente informa e interrompe.
+**FE-02. Arquivo sem faixa de áudio.** O cliente informa e interrompe.
 
-**FE-03 — Ferramenta de conversão ausente.** O cliente informa a dependência faltante e como instalá-la.
+**FE-03. Ferramenta de conversão ausente.** O cliente informa a dependência faltante e como instalá-la.
 
-**Regras.** RN-02 — a ausência de separação por trilha significa que este caminho não distingue falantes. Elevar isso exigiria diarização, decisão adiada e registrada em [adr/0007-fonte-de-audio-plugavel.md](adr/0007-fonte-de-audio-plugavel.md).
+**Regras.** RN-02: a ausência de separação por trilha significa que este caminho não distingue falantes. Elevar isso exigiria diarização, decisão adiada e registrada em [adr/0007-fonte-de-audio-plugavel.md](adr/0007-fonte-de-audio-plugavel.md).
 
 ---
 
@@ -157,28 +157,28 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 **FP**
 1. O worker seleciona a reunião mais antiga em estado elegível.
 2. O worker marca a reunião como `transcrevendo`.
-3. Para **cada trilha** da reunião — uma lista, não um número fixo:
+3. Para **cada trilha** da reunião, uma lista, não um número fixo:
    1. descarta trechos sem fala;
    2. transcreve o áudio produzindo segmentos com início, fim e texto;
    3. atribui o falante conforme a origem da trilha (RN-01, RN-02).
 4. O worker mescla os segmentos de todas as trilhas em ordem cronológica.
 5. O worker persiste os segmentos e marca a reunião como `transcrita`.
 
-**FA-01 — Vocabulário de domínio configurado.** O worker fornece o vocabulário ao modelo como contexto inicial, melhorando termos técnicos e nomes próprios (RF-13).
+**FA-01. Vocabulário de domínio configurado.** O worker fornece o vocabulário ao modelo como contexto inicial, melhorando termos técnicos e nomes próprios (RF-13).
 
-**FA-02 — Reprocessamento.** Solicitada nova transcrição de reunião já transcrita, o worker remove os segmentos anteriores antes de persistir os novos. Resumos existentes são preservados e passam a referir-se a uma transcrição substituída — condição registrada no resumo.
+**FA-02. Reprocessamento.** Solicitada nova transcrição de reunião já transcrita, o worker remove os segmentos anteriores antes de persistir os novos. Resumos existentes são preservados e passam a referir-se a uma transcrição substituída, condição registrada no resumo.
 
-**FA-03 — Trilha silenciosa.** Trilha sem fala detectada produz zero segmentos e não interrompe o processamento das demais.
+**FA-03. Trilha silenciosa.** Trilha sem fala detectada produz zero segmentos e não interrompe o processamento das demais.
 
-**FE-01 — Memória de vídeo insuficiente.** O worker tenta uma vez com configuração de menor consumo. Persistindo a falha, marca `falha_transcricao` com a causa. **O áudio permanece intacto** e a reunião continua elegível a reprocessamento (RNF-R03).
+**FE-01. Memória de vídeo insuficiente.** O worker tenta uma vez com configuração de menor consumo. Persistindo a falha, marca `falha_transcricao` com a causa. **O áudio permanece intacto** e a reunião continua elegível a reprocessamento (RNF-R03).
 
-**FE-02 — Arquivo de áudio ausente ou ilegível.** O worker marca `falha_transcricao` registrando o caminho esperado. Não remove o registro da reunião.
+**FE-02. Arquivo de áudio ausente ou ilegível.** O worker marca `falha_transcricao` registrando o caminho esperado. Não remove o registro da reunião.
 
-**FE-03 — Worker interrompido durante o processamento.** A reunião permanece em `transcrevendo` sem worker ativo. Na inicialização seguinte, o worker devolve ao estado elegível reuniões nessa condição. Nenhum trabalho se perde além do processamento já gasto.
+**FE-03. Worker interrompido durante o processamento.** A reunião permanece em `transcrevendo` sem worker ativo. Na inicialização seguinte, o worker devolve ao estado elegível reuniões nessa condição. Nenhum trabalho se perde além do processamento já gasto.
 
-**FE-04 — Banco indisponível ao persistir.** O worker mantém a reunião no estado anterior e repete depois. O áudio não é afetado.
+**FE-04. Banco indisponível ao persistir.** O worker mantém a reunião no estado anterior e repete depois. O áudio não é afetado.
 
-**Requisitos especiais.** RNF-P01 — a transcrição deve ser mais rápida que o tempo real do áudio. O worker executa em processo separado da API, pois mantém o modelo carregado em memória de vídeo ([07-arquitetura.md](07-arquitetura.md)).
+**Requisitos especiais.** RNF-P01: a transcrição deve ser mais rápida que o tempo real do áudio. O worker executa em processo separado da API, pois mantém o modelo carregado em memória de vídeo ([07-arquitetura.md](07-arquitetura.md)).
 
 ---
 
@@ -201,19 +201,19 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 6. A API persiste o resumo registrando provedor, versão do prompt e instante.
 7. A API devolve o resumo ao usuário.
 
-**FA-01 — Transcrição maior que a janela de contexto.** A API divide a transcrição, resume cada parte e consolida os resultados, preservando todo o conteúdo sem truncar (RF-17).
+**FA-01. Transcrição maior que a janela de contexto.** A API divide a transcrição, resume cada parte e consolida os resultados, preservando todo o conteúdo sem truncar (RF-17).
 
-**FA-02 — Provedor alternativo.** O usuário indica provedor diferente do padrão. O resumo é gerado por ele e o registro identifica qual foi usado, permitindo comparação (RF-18, RF-19).
+**FA-02. Provedor alternativo.** O usuário indica provedor diferente do padrão. O resumo é gerado por ele e o registro identifica qual foi usado, permitindo comparação (RF-18, RF-19).
 
-**FA-03 — Disparo automático.** Configurado para tal, a conclusão de UC-05 dispara este caso de uso sem intervenção do usuário.
+**FA-03. Disparo automático.** Configurado para tal, a conclusão de UC-05 dispara este caso de uso sem intervenção do usuário.
 
-**FE-01 — Provedor de LLM indisponível.** Situação corriqueira: o Ollama não está em execução. A API responde informando qual provedor falhou e como iniciá-lo. A reunião permanece em `transcrita`, e nenhum resumo parcial é gravado.
+**FE-01. Provedor de LLM indisponível.** Situação corriqueira: o Ollama não está em execução. A API responde informando qual provedor falhou e como iniciá-lo. A reunião permanece em `transcrita`, e nenhum resumo parcial é gravado.
 
-**FE-02 — Resposta fora do formato esperado.** A API registra a resposta bruta para diagnóstico e informa a falha. Não persiste resumo malformado como se fosse válido.
+**FE-02. Resposta fora do formato esperado.** A API registra a resposta bruta para diagnóstico e informa a falha. Não persiste resumo malformado como se fosse válido.
 
-**FE-03 — Reunião sem segmentos.** A API recusa a operação informando que não há transcrição a resumir.
+**FE-03. Reunião sem segmentos.** A API recusa a operação informando que não há transcrição a resumir.
 
-**FE-04 — Tempo limite excedido.** A API encerra a espera, informa e mantém a reunião elegível a nova tentativa.
+**FE-04. Tempo limite excedido.** A API encerra a espera, informa e mantém a reunião elegível a nova tentativa.
 
 ---
 
@@ -232,15 +232,15 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 3. O usuário seleciona uma reunião.
 4. A API devolve os dados da reunião, a transcrição com falantes e marcação de tempo, e os resumos existentes.
 
-**FA-01 — Somente resumo.** O usuário solicita apenas o resumo; a transcrição completa não é transferida.
+**FA-01. Somente resumo.** O usuário solicita apenas o resumo; a transcrição completa não é transferida.
 
-**FA-02 — Múltiplos resumos.** Havendo mais de um resumo, todos são devolvidos em ordem cronológica decrescente, identificados por provedor — o que permite compará-los (RF-19).
+**FA-02. Múltiplos resumos.** Havendo mais de um resumo, todos são devolvidos em ordem cronológica decrescente, identificados por provedor, o que permite compará-los (RF-19).
 
-**FA-03 — Reunião ainda em processamento.** A API devolve o estado atual e o que já existe, sem erro.
+**FA-03. Reunião ainda em processamento.** A API devolve o estado atual e o que já existe, sem erro.
 
-**FE-01 — Reunião inexistente.** Resposta 404.
+**FE-01. Reunião inexistente.** Resposta 404.
 
-**FE-02 — Token ausente ou expirado.** Resposta 401. O cliente aplica FA-01 de UC-01 e repete.
+**FE-02. Token ausente ou expirado.** Resposta 401. O cliente aplica FA-01 de UC-01 e repete.
 
 ---
 
@@ -256,17 +256,17 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 
 **FP**
 1. O usuário informa termos de busca.
-2. A API consulta os segmentos aplicando tratamento morfológico de português — variações da mesma raiz são equivalentes.
+2. A API consulta os segmentos aplicando tratamento morfológico de português: variações da mesma raiz são equivalentes.
 3. A API devolve os trechos encontrados, cada um com reunião de origem, instante, falante e texto.
 4. O usuário pode abrir a reunião de um resultado (**estende UC-07**).
 
-**FA-01 — Filtro por período ou falante.** O usuário restringe a busca; a API aplica o filtro antes de ordenar por relevância.
+**FA-01. Filtro por período ou falante.** O usuário restringe a busca; a API aplica o filtro antes de ordenar por relevância.
 
-**FA-02 — Nenhum resultado.** A API devolve lista vazia; o cliente informa que nada foi encontrado, sem tratar como erro.
+**FA-02. Nenhum resultado.** A API devolve lista vazia; o cliente informa que nada foi encontrado, sem tratar como erro.
 
-**FE-01 — Expressão de busca inválida.** A API informa o problema na expressão em vez de devolver erro genérico.
+**FE-01. Expressão de busca inválida.** A API informa o problema na expressão em vez de devolver erro genérico.
 
-**Requisitos especiais.** RNF-P02 — resposta em menos de 1 segundo. O tratamento morfológico de português é requisito, não otimização: sem ele, buscar "decisão" não encontra "decidimos", e o acervo perde utilidade.
+**Requisitos especiais.** RNF-P02: resposta em menos de 1 segundo. O tratamento morfológico de português é requisito, não otimização: sem ele, buscar "decisão" não encontra "decidimos", e o acervo perde utilidade.
 
 ---
 
@@ -279,24 +279,24 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 | **Pré-condições** | Política de retenção configurada |
 | **Pós-condições** | Áudio antigo comprimido ou removido; ou reunião integralmente removida |
 
-**FP — Retenção (Agendador)**
+**FP, Retenção (Agendador)**
 1. O agendador seleciona reuniões cujo áudio excedeu o prazo configurado e que já estejam transcritas.
 2. Conforme a política, comprime o áudio ou o remove.
 3. Atualiza o registro indicando que o áudio não está mais no formato original.
 4. Transcrição e resumos permanecem intactos (RN-04).
 
-**FP — Exclusão (Usuário)**
+**FP, Exclusão (Usuário)**
 1. O usuário solicita a exclusão de uma reunião.
 2. A API apresenta o que será removido e solicita confirmação explícita.
 3. Confirmado, a API remove segmentos, resumos, registro e arquivos de áudio (RN-05).
 
-**FA-01 — Reunião não transcrita.** A retenção **não** remove áudio de reunião ainda não transcrita, qualquer que seja a idade — remover destruiria o único dado existente.
+**FA-01. Reunião não transcrita.** A retenção **não** remove áudio de reunião ainda não transcrita, qualquer que seja a idade: remover destruiria o único dado existente.
 
-**FE-01 — Exclusão não confirmada.** Nada é removido.
+**FE-01. Exclusão não confirmada.** Nada é removido.
 
-**FE-02 — Arquivo de áudio já ausente.** A operação prossegue e conclui com sucesso, registrando a ausência. Remoção é idempotente.
+**FE-02. Arquivo de áudio já ausente.** A operação prossegue e conclui com sucesso, registrando a ausência. Remoção é idempotente.
 
-**FE-03 — Falha ao remover arquivo.** A API não remove o registro do banco, evitando referência órfã, e informa a falha.
+**FE-03. Falha ao remover arquivo.** A API não remove o registro do banco, evitando referência órfã, e informa a falha.
 
 ---
 
@@ -318,13 +318,13 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 4. A API armazena a referência da trilha por caminho relativo (RF-07).
 5. A API marca a reunião como `gravada`, tornando-a elegível a UC-05.
 
-**FA-01 — Reunião já registrada.** Em reprocessamento por UC-11, o cliente reaproveita o identificador existente em vez de criar duplicata.
+**FA-01. Reunião já registrada.** Em reprocessamento por UC-11, o cliente reaproveita o identificador existente em vez de criar duplicata.
 
-**FE-01 — API indisponível.** O cliente marca a reunião local como `pendente_envio` e encerra sem erro. A recuperação é responsabilidade de UC-11.
+**FE-01. API indisponível.** O cliente marca a reunião local como `pendente_envio` e encerra sem erro. A recuperação é responsabilidade de UC-11.
 
-**FE-02 — Falha no meio do envio das trilhas.** A reunião fica registrada com trilhas incompletas, em `falha_envio`. UC-11 reenvia apenas as trilhas faltantes.
+**FE-02. Falha no meio do envio das trilhas.** A reunião fica registrada com trilhas incompletas, em `falha_envio`. UC-11 reenvia apenas as trilhas faltantes.
 
-**FE-03 — Trilha excede o limite aceito.** A API informa o limite. O cliente mantém o arquivo local e reporta, sem descartá-lo.
+**FE-03. Trilha excede o limite aceito.** A API informa o limite. O cliente mantém o arquivo local e reporta, sem descartá-lo.
 
 **Requisitos especiais.** O envio é sempre posterior à gravação completa em disco (RN-08). Este caso de uso jamais é pré-requisito para iniciar ou manter uma captura.
 
@@ -347,10 +347,10 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 4. Concluído com sucesso, remove a marcação de pendência local.
 5. Informa ao usuário quantas reuniões foram reconciliadas.
 
-**FA-01 — Nenhuma pendência.** Encerra silenciosamente, sem saída.
+**FA-01. Nenhuma pendência.** Encerra silenciosamente, sem saída.
 
-**FE-01 — API ainda indisponível.** Mantém a pendência e encerra sem erro. Repetirá na próxima oportunidade. Não há descarte por número de tentativas: o áudio é insubstituível e a espera não tem custo.
+**FE-01. API ainda indisponível.** Mantém a pendência e encerra sem erro. Repetirá na próxima oportunidade. Não há descarte por número de tentativas: o áudio é insubstituível e a espera não tem custo.
 
-**FE-02 — Arquivo de áudio de uma pendência não existe mais.** Registra a inconsistência e informa o usuário, mas **não remove** a pendência automaticamente — a remoção exige decisão humana.
+**FE-02. Arquivo de áudio de uma pendência não existe mais.** Registra a inconsistência e informa o usuário, mas **não remove** a pendência automaticamente: a remoção exige decisão humana.
 
 **Requisitos especiais.** Este caso de uso existe exclusivamente para satisfazer RNF-R01. Ele é o par obrigatório de FE-01 de UC-03: sem ele, a gravação sobreviveria à queda da API mas o registro nunca se completaria.

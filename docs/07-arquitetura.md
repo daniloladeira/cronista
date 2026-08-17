@@ -127,11 +127,11 @@ flowchart TB
 
 **A seta tracejada para o disco é o único ponto lento do desenho.** O acervo fica no Windows e o container o lê atravessando o compartilhamento 9P entre a máquina virtual e o hospedeiro. Isso custa segundos por trilha, e é aceito de propósito: guardar o áudio dentro do WSL apenas transferiria a lentidão para a **escrita**, que é a operação irreversível.
 
-**Ponto de atenção de VRAM — é a restrição que governa o desenho.** A GPU tem 8 GB, mas o desktop do Windows já consome ~1,5–2 GB (medido), deixando **~6,3 GB de fato disponíveis**. Whisper (4–5 GB) e o modelo de linguagem (5–6 GB) não cabem simultaneamente, e o Whisper sozinho já ocupa a maior parte do que sobra. **Transcrever e resumir são operações mutuamente exclusivas nesta máquina.**
+**Ponto de atenção de VRAM — é a restrição que governa o desenho.** A GPU tem 8 GB, mas o desktop do Windows já consome ~1,5 a 2 GB (medido), deixando **~6,3 GB de fato disponíveis**. Whisper (4 a 5 GB) e o modelo de linguagem (5 a 6 GB) não cabem simultaneamente, e o Whisper sozinho já ocupa a maior parte do que sobra. **Transcrever e resumir são operações mutuamente exclusivas nesta máquina.**
 
 Duas consequências, ambas obrigatórias:
 
-1. O worker **carrega o modelo sob demanda e o libera após período ocioso**, em vez de mantê-lo residente. Prender 4–5 GB permanentemente economizaria cerca de vinte segundos de carregamento e custaria a memória que o resumo precisa.
+1. O worker **carrega o modelo sob demanda e o libera após período ocioso**, em vez de mantê-lo residente. Prender 4 a 5 GB permanentemente economizaria cerca de vinte segundos de carregamento e custaria a memória que o resumo precisa.
 2. O resumo automático só dispara **depois** que a transcrição liberou o modelo.
 
 Configuração e limites em [12-transcricao.md](12-transcricao.md).
