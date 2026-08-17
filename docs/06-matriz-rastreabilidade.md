@@ -17,7 +17,7 @@ Uma lacuna em qualquer eixo é defeito de especificação, e é aqui que ela apa
 
 | Recurso | Requisitos | Cobertura |
 |---|---|---|
-| RP-01 Gravação sem bot | RF-01 a RF-08 | sim |
+| RP-01 Gravação sem bot | RF-01 a RF-08, RF-31 | sim |
 | RP-02 Separação de quem falou | RF-02, RF-11 | sim |
 | RP-03 Transcrição local | RF-10, RF-12 a RF-15 | sim |
 | RP-04 Resumo estruturado | RF-16 a RF-19 | sim |
@@ -39,6 +39,7 @@ Nenhum recurso sem requisito. Nenhum requisito funcional órfão de recurso.
 | RF-03 | UC-03 | 2 | CT-07, CT-08 |
 | RF-04 | UC-03 | 2 | CT-07 |
 | RF-05 | UC-03 | 2 | CT-11 |
+| RF-31 | UC-03 | 2 | CT-41 |
 | RF-06 | UC-10 | 2 | CT-07, CT-35 |
 | RF-07 | UC-10 | 2 | CT-07 |
 | RF-08 | UC-11 | 2 | CT-33, CT-34, CT-35 |
@@ -65,7 +66,7 @@ Nenhum recurso sem requisito. Nenhum requisito funcional órfão de recurso.
 | RF-29 | UC-09 | 7 | CT-30 |
 | RF-30 | UC-09 | 7 | CT-31, CT-32 |
 
-**30 requisitos funcionais, 30 cobertos.** Nenhum requisito sem caso de uso, sem fase ou sem teste.
+**31 requisitos funcionais, 31 cobertos.** Nenhum requisito sem caso de uso, sem fase ou sem teste. RF-31 foi acrescentado depois dos demais 30 (docs/03-requisitos.md), daí o número fora de ordem na tabela acima.
 
 ---
 
@@ -108,6 +109,8 @@ Os fluxos de exceção são a parte da especificação com maior chance de virar
 | UC-03 | FE-02 dispositivo removido no meio | CT-09 |
 | UC-03 | FE-03 disco sem espaço | CT-10 |
 | UC-03 | FE-04 trilha sem sinal | CT-11 |
+| UC-03 | FA-03 pausar e retomar | CT-41 |
+| UC-03 | FE-05 falha ao retomar de uma pausa | CT-42 |
 | UC-04 | FE-01 formato não suportado | CT-13 |
 | UC-04 | FE-03 conversor ausente | CT-15 |
 | UC-05 | FE-01 memória de vídeo insuficiente | CT-18 |
@@ -142,6 +145,7 @@ Os fluxos de exceção são a parte da especificação com maior chance de virar
 | **Gravação em disco antes da API** | [0012](adr/0012-gravacao-em-disco-antes-da-api.md) | **RNF-R01, RNF-R02** |
 | Mermaid para todos os diagramas | [0013](adr/0013-mermaid-para-diagramas.md) | n/d (decisão de documentação) |
 | Worker de transcrição em container com GPU | [0014](adr/0014-worker-em-container-com-gpu.md) | RNF-C03, RNF-P01, RNF-P04 |
+| Rich como biblioteca de apresentação do CLI | [0015](adr/0015-rich-como-apresentacao-cli.md) | RF-05, RNF-U01, RNF-U02, RNF-U03 |
 
 ---
 
@@ -163,8 +167,8 @@ Honestidade sobre o que a matriz **não** garante:
 | Eixo | Total | Coberto |
 |---|---|---|
 | Recursos de produto | 8 | 8 |
-| Requisitos funcionais | 30 | 30 |
+| Requisitos funcionais | 31 | 31 |
 | Requisitos não-funcionais | 22 | 20 verificáveis + 2 por revisão |
 | Casos de uso | 11 | 11 |
-| Fluxos de exceção | 20 | 20 |
-| Decisões técnicas | 14 | 14 |
+| Fluxos de exceção | 22 | 22 |
+| Decisões técnicas | 15 | 15 |

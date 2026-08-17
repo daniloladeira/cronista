@@ -25,8 +25,11 @@ Requisito não descreve solução. Onde uma solução específica é obrigatóri
 | **RF-03** | Persistir o áudio capturado em disco local **antes** de qualquer comunicação de rede | RP-01 | Essencial |
 | **RF-04** | Encerrar a gravação por comando explícito do usuário | RP-01 | Essencial |
 | **RF-05** | Exibir, durante a gravação, indicação de que há sinal em cada trilha | RP-01 | Importante |
+| **RF-31** | Permitir pausar e retomar a gravação por comando explícito do usuário, sem encerrá-la | RP-01 | Desejável |
 
 > **RF-05 não é enfeite.** Sem ele, um microfone mudo ou um dispositivo de saída trocado só é descoberto depois da reunião, quando o áudio já se perdeu. É verificação em tempo de captura de uma falha irrecuperável.
+
+> **RF-31 foi acrescentado depois dos demais** (por isso o número fora de sequência — mesma convenção dos ADRs, numeração por ordem de decisão, não por posição no documento). O tempo pausado **não aparece no arquivo**: a gravação retomada continua de onde parou, sem trecho de silêncio gravado no meio. É o comportamento mais comum em apps de gravação, e evita gastar disco e tempo de transcrição com áudio morto.
 
 ### 1.2 Registro da reunião
 

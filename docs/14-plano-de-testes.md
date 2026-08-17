@@ -52,6 +52,8 @@ A captura não é automatizável de forma honesta: simular WASAPI testaria o sim
 | CT-33 | Reconciliação envia pendências e limpa a marcação |
 | CT-34 | Reconciliação com API ainda fora mantém a pendência, sem descarte |
 | CT-35 | Envio interrompido reenvia apenas as trilhas faltantes |
+| CT-41 | Pausar e retomar: o tempo pausado não aparece no arquivo final; áudio antes e depois da pausa fica contínuo |
+| CT-42 | Dispositivo indisponível ao retomar de uma pausa: trilha afetada preservada, a outra continua se retomou normalmente |
 
 **CT-08 é o caso de teste central do sistema.** Verifica ao mesmo tempo RNF-R01, RNF-R02, o fluxo FE-01 de UC-03 e a decisão do ADR-0012. Procedimento: iniciar gravação, derrubar o container da API no meio, encerrar a gravação, conferir que os WAV estão íntegros e reproduzíveis, que a pendência foi registrada e que o comando saiu com código 0. Depois subir a API e confirmar que `cronista sync` completa o registro.
 

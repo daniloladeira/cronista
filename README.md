@@ -50,9 +50,9 @@ flowchart LR
 |---|---|
 | [01 · Documento de Visão](docs/01-documento-de-visao.md) | Problema, posicionamento, recursos, restrições, não-objetivos |
 | [02 · Glossário](docs/02-glossario.md) | Termos do domínio |
-| [03 · Requisitos](docs/03-requisitos.md) | 30 funcionais e 22 não-funcionais, por FURPS+ |
+| [03 · Requisitos](docs/03-requisitos.md) | 31 funcionais e 22 não-funcionais, por FURPS+ |
 | [04 · Modelo de Casos de Uso](docs/04-modelo-de-casos-de-uso.md) | Atores e diagrama |
-| [05 · Detalhamento dos Casos de Uso](docs/05-detalhamento-casos-de-uso.md) | 11 casos de uso, 20 fluxos de exceção |
+| [05 · Detalhamento dos Casos de Uso](docs/05-detalhamento-casos-de-uso.md) | 11 casos de uso, 22 fluxos de exceção |
 | [06 · Matriz de Rastreabilidade](docs/06-matriz-rastreabilidade.md) | Cobertura recurso, requisito, caso de uso, teste |
 
 ### Especificação técnica

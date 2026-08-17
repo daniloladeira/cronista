@@ -32,7 +32,9 @@ O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 
 **Durante a gravação, indicação de sinal por trilha** (RF-05). Sem isso, microfone mudo só é descoberto depois da reunião.
 
-**Encerramento por `Ctrl+C` é um caminho de sucesso, não de erro.** É como a gravação termina.
+**Uma tecla pausa e retoma, sem encerrar** (RF-31). O tempo pausado não entra no arquivo (RN-11). O nome exato da tecla é detalhe de implementação, não fixado aqui.
+
+**Encerramento por `Ctrl+C` é um caminho de sucesso, não de erro.** É como a gravação termina, pausada ou não.
 
 **Renovação de token é silenciosa.** O usuário digita a senha em `cronista login` e não é interrompido de novo (UC-01, FA-01).
 

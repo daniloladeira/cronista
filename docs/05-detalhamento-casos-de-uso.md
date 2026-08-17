@@ -27,6 +27,7 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 | **RN-08** | O áudio é gravado em disco local **antes** de qualquer chamada de rede. Registro remoto nunca é pré-requisito para iniciar ou manter uma gravação |
 | **RN-09** | O formato interno de áudio é WAV PCM 16 bits, 16 kHz, mono, um arquivo por trilha |
 | **RN-10** | Toda operação da API exige token válido, exceto autenticação e verificação de saúde |
+| **RN-11** | Pausar uma gravação libera o dispositivo de áudio de cada trilha; o tempo pausado não é escrito no arquivo. Retomar reabre os dispositivos e continua escrevendo nos mesmos arquivos, em sequência |
 
 ---
 
@@ -83,7 +84,7 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 | | |
 |---|---|
 | **Ator primário** | Usuário · **Apoio:** Dispositivo de Áudio |
-| **Requisitos** | RF-02 a RF-08 |
+| **Requisitos** | RF-02 a RF-08, RF-31 |
 | **Inclui** | UC-10 |
 | **Pré-condições** | Existe dispositivo de entrada e dispositivo de saída com loopback. **Não exige API disponível** (RN-08) |
 | **Pós-condições** | Dois arquivos WAV em disco local; reunião registrada, ou marcada como `pendente_envio` |
@@ -103,6 +104,8 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 
 **FA-02. Dispositivo explícito.** O usuário indica dispositivo de entrada ou de saída diferente do padrão; o cliente usa o indicado.
 
+**FA-03. Pausar e retomar (RF-31).** Durante o passo 4, o usuário pausa a gravação por comando de teclado. O cliente encerra a captura de cada trilha de forma limpa (libera o dispositivo de áudio, sem descartar o que já foi escrito) e para de escrever nos arquivos. Ao retomar, o cliente reabre a captura de cada dispositivo e volta a escrever **nos mesmos arquivos**, em sequência — o intervalo pausado não vira trecho de silêncio gravado (RN-11). A indicação de sinal (RF-05) mostra estado "pausado" enquanto parada.
+
 **FE-01. API indisponível no passo 8.** *Este é o fluxo de exceção mais importante do sistema.* Os arquivos de áudio já estão íntegros em disco. O cliente registra a reunião localmente como `pendente_envio`, informa ao usuário que o áudio está salvo e que o registro será concluído depois, e **encerra com sucesso**. A recuperação ocorre em UC-11. Atende RNF-R01 e RNF-R02.
 
 **FE-02. Dispositivo desaparece durante a gravação.** Situação real: fone desconectado no meio da reunião. O cliente encerra a trilha afetada preservando o que foi gravado, alerta o usuário de forma visível e **continua gravando a outra trilha**. A reunião prossegue com trilha única.
@@ -110,6 +113,8 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 **FE-03. Disco sem espaço.** O cliente interrompe a gravação, preserva o que já foi escrito, e informa o espaço necessário. O material parcial permanece utilizável.
 
 **FE-04. Sinal ausente em uma trilha durante todo o período.** Ao encerrar, o cliente adverte que a trilha não registrou sinal e sugere verificar o dispositivo. Não impede o registro: o áudio existente continua válido.
+
+**FE-05. Falha ao retomar de uma pausa.** O dispositivo que estava sendo usado antes da pausa não está mais disponível (foi desconectado durante o intervalo). O cliente informa qual trilha não conseguiu retomar e trata como FE-02: preserva o que já foi gravado naquela trilha, alerta o usuário, e continua com a outra, se ela retomou normalmente.
 
 **Requisitos especiais.** A captura escreve em disco de forma incremental, não acumulando a reunião em memória (RNF-P03). O processamento durante a gravação limita-se ao necessário para escrever e medir sinal (RNF-P04).
 
