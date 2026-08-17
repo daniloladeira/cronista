@@ -7,38 +7,38 @@
 
 A linha de comando é a primeira interface, e serve de contrato para a interface desktop que virá depois (Fase 8). Tudo que ela faz, faz chamando a API — exceto capturar áudio e listar dispositivos, que são locais por natureza.
 
-O executável provisório chama-se `meet`. Muda quando o projeto ganhar nome ([16-nome.md](16-nome.md)).
+O executável provisório chama-se `cronista`. Muda quando o projeto ganhar nome ([16-nome.md](16-nome.md)).
 
 ## 2. Comandos
 
 | Comando | O que faz | Precisa da API | UC |
 |---|---|---|---|
-| `meet login` | Autentica e guarda os tokens | sim | UC-01 |
-| `meet devices` | Lista dispositivos de entrada e saída | **não** | UC-02 |
-| `meet rec` | Grava a reunião até interrupção | **não**¹ | UC-03 |
-| `meet importar <arquivo>` | Importa áudio ou vídeo existente | sim | UC-04 |
-| `meet sync` | Reenvia reuniões pendentes | sim | UC-11 |
-| `meet list` | Lista reuniões com estado | sim | UC-07 |
-| `meet ler <id>` | Mostra transcrição e resumos | sim | UC-07 |
-| `meet buscar <termo>` | Busca no acervo | sim | UC-08 |
-| `meet resumir <id>` | Gera um novo resumo | sim | UC-06 |
-| `meet excluir <id>` | Remove reunião, com confirmação | sim | UC-09 |
+| `cronista login` | Autentica e guarda os tokens | sim | UC-01 |
+| `cronista devices` | Lista dispositivos de entrada e saída | **não** | UC-02 |
+| `cronista rec` | Grava a reunião até interrupção | **não**¹ | UC-03 |
+| `cronista importar <arquivo>` | Importa áudio ou vídeo existente | sim | UC-04 |
+| `cronista sync` | Reenvia reuniões pendentes | sim | UC-11 |
+| `cronista list` | Lista reuniões com estado | sim | UC-07 |
+| `cronista ler <id>` | Mostra transcrição e resumos | sim | UC-07 |
+| `cronista buscar <termo>` | Busca no acervo | sim | UC-08 |
+| `cronista resumir <id>` | Gera um novo resumo | sim | UC-06 |
+| `cronista excluir <id>` | Remove reunião, com confirmação | sim | UC-09 |
 
-¹ **`meet rec` funciona com a API fora do ar.** Grava em disco e marca pendência, sem falhar. É a materialização do ADR-0012 na interface, e a razão de `meet sync` existir.
+¹ **`cronista rec` funciona com a API fora do ar.** Grava em disco e marca pendência, sem falhar. É a materialização do ADR-0012 na interface, e a razão de `cronista sync` existir.
 
 ## 3. Comportamentos que o contrato garante
 
-**`meet rec` sem argumento nenhum grava.** Título e dispositivos são opcionais (RNF-U01). Título ausente é gerado a partir de data e hora.
+**`cronista rec` sem argumento nenhum grava.** Título e dispositivos são opcionais (RNF-U01). Título ausente é gerado a partir de data e hora.
 
 **Durante a gravação, indicação de sinal por trilha** (RF-05). Sem isso, microfone mudo só é descoberto depois da reunião.
 
 **Encerramento por `Ctrl+C` é um caminho de sucesso, não de erro.** É como a gravação termina.
 
-**Renovação de token é silenciosa.** O usuário digita a senha em `meet login` e não é interrompido de novo (UC-01, FA-01).
+**Renovação de token é silenciosa.** O usuário digita a senha em `cronista login` e não é interrompido de novo (UC-01, FA-01).
 
-**Reconciliação é automática na inicialização.** Qualquer comando que fale com a API verifica pendências antes. `meet sync` existe para forçar manualmente.
+**Reconciliação é automática na inicialização.** Qualquer comando que fale com a API verifica pendências antes. `cronista sync` existe para forçar manualmente.
 
-**`meet excluir` sempre pede confirmação** e mostra o que será removido (UC-09).
+**`cronista excluir` sempre pede confirmação** e mostra o que será removido (UC-09).
 
 ## 4. Códigos de saída
 
@@ -51,7 +51,7 @@ O executável provisório chama-se `meet`. Muda quando o projeto ganhar nome ([1
 | `4` | Falha de dispositivo de áudio |
 | `5` | Operação incompatível com o estado da reunião |
 
-O código `3` nunca aparece em `meet rec` nem em `meet devices` — por construção.
+O código `3` nunca aparece em `cronista rec` nem em `cronista devices` — por construção.
 
 ## 5. Mensagens de erro
 

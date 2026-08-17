@@ -1,71 +1,69 @@
 # Nome do Projeto
 
-> **Status: em aberto, por decisão deliberada.**
-> **Última atualização:** 2026-08-12
+> **Status: decidido — Cronista.**
+> **Decidido em:** 2026-08-17 · **Última atualização:** 2026-08-17
 
-## 1. Situação
+## 1. O nome
 
-O projeto ainda não tem nome. Cinco rodadas de sugestão não produziram nenhum que agradasse, e a decisão foi **adiar** em vez de escolher por cansaço.
+**Cronista** — quem registra o que aconteceu, na ordem em que aconteceu.
 
-Isso não bloqueia nada. Até que apareça, valem os identificadores provisórios:
-
-| Item | Provisório |
+| Item | Valor |
 |---|---|
-| Pacote Python | `meet_transcript` |
-| Executável | `meet` |
-| Repositório | `meet-transcript` |
-| Banco de dados | `meet_transcript` |
+| Pacote Python | `cronista` |
+| Executável | `cronista` |
+| Repositório | `cronista` |
+| Banco de dados | `cronista` |
+| Diretório de dados | `%LOCALAPPDATA%\cronista` |
 
-## 2. Critérios
+## 2. Por que este
 
-Do que a discussão revelou sobre o que se procura:
+**Descreve o papel, não o artefato.** "Ata", "Minuta" e "Súmula" nomeiam o documento produzido. O sistema, porém, faz o trabalho de uma *pessoa* que anotaria a reunião por você — e nomear o papel encaixa melhor no que o produto é.
 
-- **Vernacular** — português brasileiro, não inglês genérico
-- **Não formal demais** — Ata, Escriba e Pauta soaram burocráticos
-- **Não gíria demais** — Prosa, Papo e Resenha soaram informais demais
-- **Curto no terminal** — é digitado várias vezes ao dia
-- **Sem conflito óbvio** com produto existente
+**Cai na faixa que se procurava.** Cinco rodadas de sugestão fracassaram por oscilar entre extremos: Ata, Escriba e Pauta soaram formais demais; Prosa, Papo e Resenha, informais demais. Cronista fica entre os dois.
 
-O espaço entre "formal demais" e "informal demais" é estreito, e é isso que torna a escolha difícil.
+**Carrega um tom que nenhum outro candidato tinha.** No Brasil, "crônica" é gênero literário do cotidiano — Rubem Braga, Verissimo. O nome sugere registro bem-escrito e leve, em vez de burocrático. Para um sistema cujo entregável é texto lido por humano, isso conta.
+
+**Não colide.** Não há software conhecido com esse nome.
+
+**Nota sobre a extensão.** São oito caracteres, digitados várias vezes ao dia. Abreviar para `cron` foi **descartado**: colidiria de frente com o agendador do Unix. O autocompletar do terminal resolve na prática.
 
 ## 3. Candidatos considerados
 
-Registrados para não refazer o trabalho. Nenhum foi aceito.
+Preservado como registro do processo, não como lista de pendências.
 
 | Ângulo | Candidatos |
 |---|---|
-| Registro formal | Ata · **Minuta** · Súmula · Registro · Caderneta · Fichário · Memo |
-| Pessoa ou papel | Escriba · Escrivão · **Relator** · Cronista · Taquígrafo · Caxias · Testemunha |
-| Escuta | **Tímpano** · Orelhão · Antena · Radinho · Escuta · Ouvido · Eco · Sussurro |
+| Registro formal | Ata · Minuta · Súmula · Registro · Caderneta · Fichário · Memo |
+| Pessoa ou papel | **Cronista** · Escriba · Escrivão · Relator · Taquígrafo · Caxias · Testemunha |
+| Escuta | Tímpano · Orelhão · Antena · Radinho · Escuta · Ouvido · Eco · Sussurro |
 | Conversa | Prosa · Papo · Resenha · Bate-papo · Falaê · Diga |
-| Folclore e bichos | Saci · Curupira · Boitatá · Sabiá · Curió · Mainá |
+| Folclore e bichos | Saci · Curupira · Boitatá · Iara · Uirapuru · Sabiá · Curió · Mainá |
 | Inventado | Notari · Memora · Reunia · Atali · Resumia |
 | Objeto ou marca | Cola · Rabisco · Bilhete · Recado |
 
-**Os três que chegaram mais perto**, se a discussão for retomada:
+### 3.1 Uma armadilha que quase passou
 
-- **Minuta** — termo brasileiro para rascunho de documento oficial, e trocadilho com *minutes*, que é ata em inglês. Funciona nos dois idiomas.
-- **Relator** — quem relata e sintetiza. Peso institucional, sem soar corporativo genérico.
-- **Tímpano** — a membrana que converte som em sinal, que é literalmente a função do sistema. O mais distinto de tudo que existe no mercado.
+Dois nomes da linha de folclore — **Curupira** e **Iara** — são personagens definidos por **enganar**. A Curupira tem os pés virados para trás justamente para desorientar quem a segue; a Iara canta para atrair e afogar.
 
-## 4. Procedimento de renomeação
+Batizar assim um sistema cujo valor inteiro é fidelidade ao que foi dito, e cujo pior defeito possível é inventar uma decisão que não houve ([14-plano-de-testes.md](14-plano-de-testes.md) §5, alucinação é critério eliminatório), seria escolher um nome que significa o oposto do produto.
 
-Quando o nome aparecer, isto é o que muda. Feito antes da Fase 2, o custo é baixo; depois de existirem dados reais, o item 6 passa a exigir migração.
+Nome arbitrário e memorável é estratégia legítima — Kafka, Hadoop, Puma não descrevem nada. Mas quando o nome **significa** alguma coisa, precisa não significar o contrário.
 
-| # | Onde | O que muda |
+## 4. Renomeação: executada
+
+Aplicada em 2026-08-17, antes de existir qualquer código — o momento mais barato possível.
+
+| # | Onde | Estado |
 |---|---|---|
-| 1 | `pyproject.toml` | `name` do projeto e o executável em `[project.scripts]` |
-| 2 | `meet_transcript/` | Nome do diretório do pacote |
-| 3 | Todos os `import` | Referências ao pacote |
-| 4 | `docs/` | Menções nos documentos — o texto foi escrito evitando o nome justamente para reduzir isto |
-| 5 | `.env.example`, `docker-compose.yml` | Nome do serviço e do container |
-| 6 | Banco e diretório de dados | Nome do banco e a pasta em `%LOCALAPPDATA%` |
-| 7 | Repositório | Nome no controle de versão |
+| 1 | `pyproject.toml` — nome e executável | ✅ |
+| 2 | Nome do pacote | ✅ |
+| 3 | Menções na documentação | ✅ |
+| 4 | `.env.example`, `docker-compose.yml` — banco, containers, volumes | ✅ |
+| 5 | Diretório de dados em `%LOCALAPPDATA%` | ✅ na especificação |
+| 6 | Diretório do repositório no disco | ⏳ pendente |
 
-**Ordem recomendada:** fazer os itens 1 a 5 em um único commit dedicado, sem misturar com mudança funcional, para que o diff seja legível como renomeação. Os itens 6 e 7 depois, separadamente.
+O item 6 é movimentação de pasta no sistema de arquivos, feita fora do controle de versão. Nada depende dele: os caminhos de áudio são relativos por decisão do [ADR-0004](adr/0004-uuid-timestamptz-caminhos-relativos.md), e o repositório não tem remoto.
 
-**Se o nome só aparecer depois de a Fase 2 estar em uso**, o item 6 exige migrar o banco e mover o diretório de gravações — e os caminhos guardados são relativos justamente para que isso seja possível sem tocar em nenhuma linha do banco ([ADR-0004](adr/0004-uuid-timestamptz-caminhos-relativos.md)).
+## 5. Observação
 
-## 5. Uma observação
-
-Nomes bons costumam aparecer depois que a coisa existe e se sabe o que ela é. Adiar não é indecisão: é reconhecer que a informação necessária ainda não chegou.
+O nome apareceu depois que a especificação estava pronta — e apareceu com facilidade, quando cinco tentativas anteriores de forçá-lo haviam falhado. Adiar não foi indecisão: era falta de informação sobre o que a coisa era.

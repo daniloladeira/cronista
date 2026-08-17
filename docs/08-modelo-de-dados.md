@@ -14,7 +14,7 @@ O banco armazena a **referência**, sempre relativa a uma raiz configurável, ma
 ## 2. Layout em disco
 
 ```
-%LOCALAPPDATA%\meet-transcript\
+%LOCALAPPDATA%\cronista\
 ├─ recordings\
 │  └─ 2026-08-12_1430_reuniao-comercial\      ← meetings.audio_dir (relativo)
 │     ├─ voce.wav                             ← tracks.path

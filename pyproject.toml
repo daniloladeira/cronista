@@ -1,6 +1,6 @@
 # Nome provisório. Ver docs/16-nome.md
 [project]
-name = "meet-transcript"
+name = "cronista"
 version = "0.1.0"
 description = "Grava, transcreve e resume reunioes localmente"
 requires-python = ">=3.13,<3.14"   # ADR-0008
@@ -39,11 +39,11 @@ dev = [
 ]
 
 [project.scripts]
-meet = "meet_transcript.client.cli:app"
+cronista = "cronista.client.cli:app"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["meet_transcript*"]
+include = ["cronista*"]

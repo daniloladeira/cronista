@@ -24,7 +24,7 @@ Nove fases. Cada uma entrega algo utilizável e só está concluída quando seus
 
 PostgreSQL em container, migração inicial com as quatro tabelas, FastAPI no ar, login com JWT.
 
-**Pronto quando:** `docker compose up -d` sobe o banco, `alembic upgrade head` cria o esquema, `meet login` devolve token, e um endpoint protegido recusa requisição sem token.
+**Pronto quando:** `docker compose up -d` sobe o banco, `alembic upgrade head` cria o esquema, `cronista login` devolve token, e um endpoint protegido recusa requisição sem token.
 
 **Fase de infraestrutura pura, sem funcionalidade visível.** É o custo de ter escolhido a API como centro do sistema ([ADR-0010](adr/0010-api-como-centro.md)), e é melhor pagá-lo de uma vez do que parcelado.
 
@@ -68,7 +68,7 @@ Listagem, leitura de transcrição e resumos, busca com stemming de português.
 
 ### Fase 6 · Importação de arquivo
 
-`meet importar`, conversão com ffmpeg, reaproveitando o endpoint da Fase 2.
+`cronista importar`, conversão com ffmpeg, reaproveitando o endpoint da Fase 2.
 
 **Pronto quando:** um mp3 antigo vira reunião transcrita e resumida.
 
@@ -107,7 +107,6 @@ Nenhuma bloqueia o início.
 
 | Em aberto | Quando decidir |
 |---|---|
-| **Nome do projeto** | Quando aparecer. Ver [16-nome.md](16-nome.md) |
 | Modelo do Ollama | Fase 4, medindo em português real |
 | Exposição na rede | Fase 9 |
 | Diarização em arquivos importados | Fase 6, se o resumo sofrer sem falante |

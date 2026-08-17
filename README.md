@@ -1,12 +1,12 @@
-# Transcrição e resumo de reuniões
+# Cronista
 
 Grava reuniões direto do computador, transcreve **localmente** e gera resumos estruturados em português. Sem bot entrando na chamada, sem cota de uso, sem mensalidade, e sem o áudio sair da máquina.
+
+*Cronista: quem registra o que aconteceu, na ordem em que aconteceu.*
 
 > ## ⚠️ Estado atual: especificação
 >
 > **Ainda não há código.** Este repositório contém, por ora, a engenharia de requisitos e a especificação técnica completas. A implementação começa pela Fase 1 do [roadmap](docs/15-roadmap.md).
->
-> O projeto também **ainda não tem nome** — ver [docs/16-nome.md](docs/16-nome.md).
 
 ## Por que existe
 
@@ -108,7 +108,7 @@ A distro sobe, o systemd inicia o Docker e os containers voltam sozinhos (`resta
 
 Para derrubar tudo: `wsl --shutdown`.
 
-**Esquecer de subir não custa uma reunião.** Gravar não depende de API, banco nem WSL — o áudio vai para o disco e o registro se completa depois, com `meet sync`. É exatamente o cenário que motivou o [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md): ninguém confere container antes de entrar numa reunião.
+**Esquecer de subir não custa uma reunião.** Gravar não depende de API, banco nem WSL — o áudio vai para o disco e o registro se completa depois, com `cronista sync`. É exatamente o cenário que motivou o [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md): ninguém confere container antes de entrar numa reunião.
 
 ---
 

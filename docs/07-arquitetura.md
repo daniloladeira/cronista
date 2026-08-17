@@ -99,7 +99,7 @@ flowchart TB
             APIP["API FastAPI<br/>uvicorn :8000"]
             OLLP["Ollama :11434"]
         end
-        FS[("%LOCALAPPDATA%\\meet-transcript<br/>recordings/")]
+        FS[("%LOCALAPPDATA%\\cronista<br/>recordings/")]
         subgraph WSL["WSL2 · Docker Engine"]
             PG[("PostgreSQL<br/>:5432")]
             WKP["Worker de transcrição<br/>container com --gpus"]

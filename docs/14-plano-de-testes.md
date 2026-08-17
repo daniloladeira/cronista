@@ -53,7 +53,7 @@ A captura não é automatizável de forma honesta: simular WASAPI testaria o sim
 | CT-34 | Reconciliação com API ainda fora mantém a pendência, sem descarte |
 | CT-35 | Envio interrompido reenvia apenas as trilhas faltantes |
 
-**CT-08 é o caso de teste central do sistema.** Verifica ao mesmo tempo RNF-R01, RNF-R02, o fluxo FE-01 de UC-03 e a decisão do ADR-0012. Procedimento: iniciar gravação, derrubar o container da API no meio, encerrar a gravação, conferir que os WAV estão íntegros e reproduzíveis, que a pendência foi registrada e que o comando saiu com código 0. Depois subir a API e confirmar que `meet sync` completa o registro.
+**CT-08 é o caso de teste central do sistema.** Verifica ao mesmo tempo RNF-R01, RNF-R02, o fluxo FE-01 de UC-03 e a decisão do ADR-0012. Procedimento: iniciar gravação, derrubar o container da API no meio, encerrar a gravação, conferir que os WAV estão íntegros e reproduzíveis, que a pendência foi registrada e que o comando saiu com código 0. Depois subir a API e confirmar que `cronista sync` completa o registro.
 
 ### 3.3 Transcrição — Fase 3
 
@@ -135,8 +135,8 @@ Não há métrica automática confiável para qualidade de resumo. A avaliação
 
 Executado a cada mudança na camada de captura:
 
-1. `meet devices` — conferir que microfone e saída aparecem, e que a saída oferece loopback.
-2. `meet rec` durante uma chamada real de 2 minutos, falando e ouvindo o outro lado.
+1. `cronista devices` — conferir que microfone e saída aparecem, e que a saída oferece loopback.
+2. `cronista rec` durante uma chamada real de 2 minutos, falando e ouvindo o outro lado.
 3. Conferir que os dois WAV existem, têm duração coerente e são reproduzíveis.
 4. Confirmar que `voce.wav` tem a sua voz e `outros.wav` tem a do interlocutor — **não o contrário**.
 5. Conferir que o indicador de sinal se moveu nas duas trilhas durante a gravação.
