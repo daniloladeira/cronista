@@ -76,6 +76,7 @@ flowchart LR
 | [16 · Nome](docs/16-nome.md) | Candidatos e procedimento de renomeação |
 | [17 · Identidade Visual e Animação do CLI](docs/17-identidade-visual-cli.md) | Rich, barras de gradiente, papéis semânticos de cor |
 | [ADRs](docs/adr/) | 16 decisões, cada uma com gatilho de reversão |
+| [Referência Rich](docs/referencia-rich.md) | Guia técnico de implementação — não é spec, é atalho pra não redescobrir API |
 
 ## Decisões
 

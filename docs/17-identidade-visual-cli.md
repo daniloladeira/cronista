@@ -134,3 +134,4 @@ O que foi pedido explicitamente: testar antes de integrar.
 | [ADR-0006](adr/0006-cli-antes-de-desktop.md) | A tensão que motivou a escolha |
 | [11-cli.md](11-cli.md) | Comportamento dos comandos; este documento trata só de aparência |
 | [03-requisitos.md](03-requisitos.md) | RF-05, RNF-U01 a RNF-U03 — os requisitos que este documento implementa visualmente |
+| [Referência Rich](referencia-rich.md) | Guia técnico de API — este documento explica o porquê, aquele explica o como |
