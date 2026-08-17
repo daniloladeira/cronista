@@ -11,7 +11,7 @@ dependencies = [
     "numpy>=2.0",
     # Linha de comando (ADR-0006)
     "typer>=0.15",
-    "httpx>=0.28",
+    "httpx2>=2.10",  # httpx está sem manutenção desde 2024; testclient do Starlette exige httpx2
     # API e autenticação (ADR-0010, ADR-0011)
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
@@ -47,3 +47,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["cronista*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

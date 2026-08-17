@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from cronista.core.config import settings
+from cronista.core.config import DatabaseSettings
 from cronista.core.models import Base
 
 config = context.config
@@ -11,7 +11,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# A URL vem do .env via cronista.core.config, nunca de alembic.ini (docs/10-autenticacao.md).
+# A URL vem do .env via cronista.core.config, nunca de alembic.ini.
+# DatabaseSettings (não Settings) de propósito: migração não deve exigir
+# credenciais de autenticação para rodar.
+settings = DatabaseSettings()
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
 target_metadata = Base.metadata
