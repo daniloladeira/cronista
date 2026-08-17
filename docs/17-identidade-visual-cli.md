@@ -36,11 +36,12 @@ Ponto de partida: o artigo da engenharia por trás do banner animado do [GitHub 
 |---|---|---|
 | `cronista` sem comando, primeira execução do dia | Banner de abertura curto (poucos segundos) | Estético; segue a restrição do artigo de não aparecer a cada invocação |
 | Qualquer chamada de rede (`login`, `refresh`, envio de trilha, busca) | Indicador de status (`rich.status`) enquanto espera a resposta | RNF-U01, RNF-U03 — o usuário sabe que algo está acontecendo, e se foi rápido ou travou |
-| `cronista rec`, durante a gravação | **Medidor de LED como indicador de sinal**, uma escada por trilha (`voce`, `outros`) | É a implementação visual de **RF-05**, que já exigia indicação de sinal por trilha |
+| `cronista rec`, durante a gravação | **Traço fino embutido no cabeçalho**, um por trilha (`voce`, `outros`) — ver `signal_bar.py` `render_header_trace()` | É a implementação visual de **RF-05**, que já exigia indicação de sinal por trilha |
+| `cronista rec`, durante uma pausa (RF-31) | **Em aberto.** A barra congela? Muda de cor? Aparece texto "pausado"? Não decidido — adiado junto da implementação da etapa 5 | RF-31 |
 | Transcrição (Fase 3) | Barra de progresso | Ainda não implementado; registrado aqui para não ser esquecido quando a Fase 3 chegar |
 | Erro | Texto no papel `erro`, sem animação | RNF-U02 — mensagem de erro não é hora de efeito visual, é hora de clareza |
 
-**O medidor de LED do `rec` é o elemento mais importante desta lista.** Não é decoração: é a resposta visual ao requisito que já existia. Um indicador que sobe e desce com o volume captado é o que permite notar, durante a reunião, que um microfone está mudo — que é exatamente o cenário que RF-05 foi escrito para prevenir.
+**O indicador de sinal do `rec` é o elemento mais importante desta lista.** Não é decoração: é a resposta visual ao requisito que já existia. Um traço que sobe e desce com o volume captado é o que permite notar, durante a reunião, que um microfone está mudo — que é exatamente o cenário que RF-05 foi escrito para prevenir.
 
 ## 4. Paleta
 
@@ -94,6 +95,8 @@ Duas tentativas antes desta, ambas testadas de verdade no terminal e descartadas
 **Não há arte pré-desenhada aqui.** Ao contrário do banner (§7), o medidor é calculado em tempo real a partir de um valor (nível de áudio) — não existe "quadro" para autorar, só a função que traduz nível em células acesas.
 
 ## 7. Formato dos ativos do banner
+
+> **Status: adiado, de propósito.** O "CRONISTA" em blocos foi testado (`scripts/preview_big_title.py`, fonte de matriz de LED 5×7) em resposta à pergunta "dá pra aumentar a letra", mas nunca decidido se entra de verdade nem onde aparece. É decorativo — o sistema funciona sem ele. Fica para quando `cronista rec` (etapa 5) estiver pronto e sobrar tempo de polimento, não antes.
 
 O banner de abertura, ao contrário da barra, é arte de verdade — alguém desenha.
 
