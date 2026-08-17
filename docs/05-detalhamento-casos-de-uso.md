@@ -313,16 +313,16 @@ Aplicam-se a mais de um caso de uso e por isso ficam centralizadas.
 
 **FP**
 1. O cliente registra a reunião na API com título, instantes, duração, origem e máquina.
-2. A API devolve o identificador da reunião.
+2. A API cria a reunião em estado `registering` (existe no banco, trilhas ainda pendentes) e devolve o identificador.
 3. Para cada trilha, o cliente envia o arquivo associando-o à reunião e ao falante correspondente.
 4. A API armazena a referência da trilha por caminho relativo (RF-07).
-5. A API marca a reunião como `gravada`, tornando-a elegível a UC-05.
+5. Confirmadas todas as trilhas, a API marca a reunião como `gravada` (`recorded`), tornando-a elegível a UC-05.
 
-**FA-01. Reunião já registrada.** Em reprocessamento por UC-11, o cliente reaproveita o identificador existente em vez de criar duplicata.
+**FA-01. Reunião já registrada.** Em reprocessamento por UC-11, o cliente reaproveita o identificador existente (a reunião já pode estar em `registering`, se o passo 2 já tinha sido concluído antes) em vez de criar duplicata.
 
 **FE-01. API indisponível.** O cliente marca a reunião local como `pendente_envio` e encerra sem erro. A recuperação é responsabilidade de UC-11.
 
-**FE-02. Falha no meio do envio das trilhas.** A reunião fica registrada com trilhas incompletas, em `falha_envio`. UC-11 reenvia apenas as trilhas faltantes.
+**FE-02. Falha no meio do envio das trilhas.** A reunião já existe no banco em `registering`, mas com trilhas incompletas. O cliente marca a pendência local como `falha_envio`, distinta de `pendente_envio` porque o identificador da reunião já existe. UC-11 reenvia apenas as trilhas faltantes.
 
 **FE-03. Trilha excede o limite aceito.** A API informa o limite. O cliente mantém o arquivo local e reporta, sem descartá-lo.
 

@@ -68,8 +68,8 @@ class Meeting(Base):
             name="ck_meetings_audio_state",
         ),
         CheckConstraint(
-            "status IN ('recorded', 'transcribing', 'transcribed', 'summarized', "
-            "'transcription_failed', 'summary_failed')",
+            "status IN ('registering', 'recorded', 'transcribing', 'transcribed', "
+            "'summarized', 'transcription_failed', 'summary_failed')",
             name="ck_meetings_status",
         ),
         Index("meetings_queue_idx", "status", "started_at"),

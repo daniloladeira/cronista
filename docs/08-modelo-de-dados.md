@@ -96,9 +96,9 @@ CREATE TABLE meetings (
     audio_state  text        NOT NULL DEFAULT 'original'
                              CHECK (audio_state IN ('original', 'compressed', 'removed')),
     status       text        NOT NULL
-                             CHECK (status IN ('recorded', 'transcribing', 'transcribed',
-                                               'summarized', 'transcription_failed',
-                                               'summary_failed')),
+                             CHECK (status IN ('registering', 'recorded', 'transcribing',
+                                               'transcribed', 'summarized',
+                                               'transcription_failed', 'summary_failed')),
     error        text,
     started_at   timestamptz NOT NULL,
     ended_at     timestamptz,
@@ -183,9 +183,12 @@ stateDiagram-v2
     [*] --> gravando
     gravando --> pendente_envio : encerrada, API fora
     gravando --> enviando : encerrada, API no ar
-    pendente_envio --> enviando : UC-11 reconcilia
-    enviando --> pendente_envio : falha no envio
-    enviando --> recorded : registro concluído
+    pendente_envio --> enviando : UC-11 reconcilia, do zero
+    falha_envio --> enviando : UC-11 reconcilia, só trilhas faltantes
+    enviando --> pendente_envio : falha antes de criar a reunião
+    enviando --> falha_envio : reunião criada, alguma trilha não confirmada
+    enviando --> registering : reunião criada no banco
+    registering --> recorded : todas as trilhas confirmadas
     recorded --> transcribing : worker seleciona
     transcribing --> transcribed : sucesso
     transcribing --> transcription_failed : erro
@@ -198,21 +201,26 @@ stateDiagram-v2
     summarized --> [*]
 
     note right of pendente_envio
-        gravando, pendente_envio e enviando
-        são estados LOCAIS do cliente.
-        Não existem no banco, durante uma
-        queda da API não há banco a consultar.
+        gravando, pendente_envio, enviando
+        e falha_envio são estados LOCAIS
+        do cliente. Não existem no banco;
+        durante uma queda da API não há
+        banco a consultar.
     end note
 ```
+
+**`registering` é o estado que faltava.** O fluxo de UC-10 registra a reunião primeiro e envia as trilhas depois; sem um estado intermediário no banco, uma reunião recém-criada teria que mentir que já está `recorded` (arriscando o worker pegá-la sem trilha nenhuma) ou violar a coluna `NOT NULL`. `registering` cobre exatamente a janela entre "a API sabe que a reunião existe" e "todas as trilhas chegaram".
 
 ### 5.1 A fronteira entre os dois conjuntos de estado
 
 | Onde | Estados | Fonte de verdade |
 |---|---|---|
-| Cliente (`pending.json`) | `gravando`, `pendente_envio`, `enviando` | Disco local |
-| Banco (`meetings.status`) | `recorded` … `summary_failed` | PostgreSQL |
+| Cliente (`pending.json`) | `gravando`, `pendente_envio`, `enviando`, `falha_envio` | Disco local |
+| Banco (`meetings.status`) | `registering`, `recorded` … `summary_failed` | PostgreSQL |
 
 A separação não é acidental: se a API está fora, o banco não sabe que a reunião existe. O cliente precisa de um registro próprio para que UC-11 tenha o que reconciliar. Este é o preço concreto do ADR-0012, e ele é pequeno perto de perder uma reunião.
+
+**`falha_envio` distingue-se de `pendente_envio`.** O primeiro significa "a reunião já existe no banco, faltou enviar alguma trilha"; o segundo, "nada foi enviado ainda, nem a reunião". A diferença importa para UC-11: com `falha_envio`, a reconciliação reaproveita o identificador já emitido pela API e reenvia só o que falta (UC-10, FA-01); com `pendente_envio`, ela começa do zero.
 
 ### 5.2 O estado é a fila
 
