@@ -60,7 +60,7 @@ Valores exatos ficam em configuração, não fixos em código.
 | Rede local | Escuta na interface da LAN |
 | Fora de casa | **Rede privada tipo Tailscale**, nunca porta aberta no roteador |
 
-Com rede privada, não é preciso operar certificado, expor porta, nem defender a superfície contra varredura da internet. A escolha entre LAN e Tailscale segue em aberto e não bloqueia nada — ver [15-roadmap.md](15-roadmap.md).
+Com rede privada, não é preciso operar certificado, expor porta, nem defender a superfície contra varredura da internet. A escolha entre LAN e Tailscale segue em aberto e não bloqueia nada, ver [15-roadmap.md](15-roadmap.md).
 
 Se algum dia a API for exposta publicamente, **este documento deixa de valer** e precisa ser revisto por inteiro: limite de tentativas, HTTPS obrigatório, rotação de segredo e auditoria passam a ser necessários. Nenhum deles é necessário hoje.
 
@@ -80,7 +80,7 @@ Registrado para que a ausência seja lida como decisão, não como esquecimento:
 ## 6. Regras invioláveis
 
 1. A senha nunca é gravada em log, em disco ou em mensagem de erro.
-2. Só o hash é persistido — nunca a senha (RF-28).
+2. Só o hash é persistido, nunca a senha (RF-28).
 3. Erro de login não distingue "usuário inexistente" de "senha errada".
 4. Todo endpoint exige token, exceto `/auth/login` e `/health` (RN-10).
 5. O segredo de assinatura fica em `.env`, fora do controle de versão.

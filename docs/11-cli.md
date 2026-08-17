@@ -5,7 +5,7 @@
 
 ## 1. Papel
 
-A linha de comando é a primeira interface, e serve de contrato para a interface desktop que virá depois (Fase 8). Tudo que ela faz, faz chamando a API — exceto capturar áudio e listar dispositivos, que são locais por natureza.
+A linha de comando é a primeira interface, e serve de contrato para a interface desktop que virá depois (Fase 8). Tudo que ela faz, faz chamando a API, exceto capturar áudio e listar dispositivos, que são locais por natureza.
 
 O executável provisório chama-se `cronista`. Muda quando o projeto ganhar nome ([16-nome.md](16-nome.md)).
 
@@ -44,14 +44,14 @@ O executável provisório chama-se `cronista`. Muda quando o projeto ganhar nome
 
 | Código | Significado |
 |---|---|
-| `0` | Sucesso — inclui gravação encerrada por `Ctrl+C` e busca sem resultado |
+| `0` | Sucesso, inclui gravação encerrada por `Ctrl+C` e busca sem resultado |
 | `1` | Erro de uso: argumento inválido, arquivo inexistente |
 | `2` | Falha de autenticação |
 | `3` | API inacessível **em operação que a exige** |
 | `4` | Falha de dispositivo de áudio |
 | `5` | Operação incompatível com o estado da reunião |
 
-O código `3` nunca aparece em `cronista rec` nem em `cronista devices` — por construção.
+O código `3` nunca aparece em `cronista rec` nem em `cronista devices`, por construção.
 
 ## 5. Mensagens de erro
 
