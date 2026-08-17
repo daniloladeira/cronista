@@ -1,6 +1,6 @@
 # Identidade Visual e Animação do CLI
 
-> **Versão:** 1.0 · **Última atualização:** 2026-08-17
+> **Versão:** 1.1 · **Última atualização:** 2026-08-17
 > Decisão de biblioteca: [ADR-0015](adr/0015-rich-como-apresentacao-cli.md).
 > **Este documento não introduz requisito novo.** Especifica como RF-05, RNF-U01, RNF-U02 e RNF-U03 se manifestam na tela. Se algum dia divergir de [11-cli.md](11-cli.md), aquele documento é quem define comportamento; este define aparência.
 
@@ -17,7 +17,7 @@ Ponto de partida: o artigo da engenharia por trás do banner animado do [GitHub 
 
 **O que não se aplica e foi descartado:** editor de frames dedicado (o artigo construiu um; aqui a escala do projeto não paga esse investimento — ver §7), framework de componentes tipo Ink (não existe equivalente direto em Python; Rich cobre o necessário sem esse nível de aparato).
 
-**O que foi decidido diferente, deliberadamente:** o artigo evitou gradiente de cor por causa da fragmentação de terminal. Aqui o gradiente entrou mesmo assim, por pedido explícito do usuário, aceitando o risco de degradar mal em terminal sem truecolor — mitigado pela detecção automática do Rich (§5).
+**O que foi decidido diferente, e depois revertido de volta.** A primeira versão do medidor de sinal usava gradiente de cor contínuo (verde→amarelo→vermelho), justamente o que o artigo evitou por causa da fragmentação de terminal. Testado de verdade no terminal do usuário, o gradiente foi **rejeitado por gosto**, não por limitação técnica: "não tá pixelizado". A versão final usa blocos sólidos em estados discretos ligado/desligado — mais parecido com o artigo do GitHub (que também usa blocos, não gradiente) do que a primeira tentativa. Ver §6.
 
 ## 2. Princípios
 
@@ -26,7 +26,7 @@ Ponto de partida: o artigo da engenharia por trás do banner animado do [GitHub 
 | Decoração, não mudança de modelo | Todo comando continua sendo uma função que roda e termina (ADR-0015) |
 | Nunca bloqueia | Uma animação de abertura não atrasa o comando real; um spinner de rede desaparece assim que a resposta chega |
 | Desliga sozinho quando precisa | Saída redirecionada, `NO_COLOR` definido, ou terminal sem suporte a cor: sem animação, sem código ANSI vazando pro arquivo |
-| Papel semântico, não cor fixa | Cada elemento tem um papel (`voce`, `outros`, `sucesso`, `erro`, `atenção`, `neutro`); a paleta traduz papel em cor, não o código |
+| Uma cor principal, o resto neutro | Dourado (`#DFB878`) é a cor de identidade do sistema; tudo que não precisa competir por atenção fica neutro (§4) |
 | Onde há espera real, ou onde a spec já pedia sinal visual | Anima porque há algo acontecendo que vale mostrar, não decoração por decoração |
 
 ## 3. Onde aparece
@@ -35,24 +35,23 @@ Ponto de partida: o artigo da engenharia por trás do banner animado do [GitHub 
 |---|---|---|
 | `cronista` sem comando, primeira execução do dia | Banner de abertura curto (poucos segundos) | Estético; segue a restrição do artigo de não aparecer a cada invocação |
 | Qualquer chamada de rede (`login`, `refresh`, envio de trilha, busca) | Indicador de status (`rich.status`) enquanto espera a resposta | RNF-U01, RNF-U03 — o usuário sabe que algo está acontecendo, e se foi rápido ou travou |
-| `cronista rec`, durante a gravação | **Barra de gradiente como medidor de sinal**, uma por trilha (`voce`, `outros`) | É a implementação visual de **RF-05**, que já exigia indicação de sinal por trilha |
+| `cronista rec`, durante a gravação | **Medidor de LED como indicador de sinal**, uma escada por trilha (`voce`, `outros`) | É a implementação visual de **RF-05**, que já exigia indicação de sinal por trilha |
 | Transcrição (Fase 3) | Barra de progresso | Ainda não implementado; registrado aqui para não ser esquecido quando a Fase 3 chegar |
 | Erro | Texto no papel `erro`, sem animação | RNF-U02 — mensagem de erro não é hora de efeito visual, é hora de clareza |
 
-**A barra de gradiente do `rec` é o elemento mais importante desta lista.** Não é decoração: é a resposta visual ao requisito que já existia. Um medidor que sobe e desce com o volume captado é o que permite notar, durante a reunião, que um microfone está mudo — que é exatamente o cenário que RF-05 foi escrito para prevenir.
+**O medidor de LED do `rec` é o elemento mais importante desta lista.** Não é decoração: é a resposta visual ao requisito que já existia. Um indicador que sobe e desce com o volume captado é o que permite notar, durante a reunião, que um microfone está mudo — que é exatamente o cenário que RF-05 foi escrito para prevenir.
 
-## 4. Paleta por papel semântico
+## 4. Paleta
 
-| Papel | Uso | Tema claro | Tema escuro |
-|---|---|---|---|
-| `voce` | Trilha do microfone, elementos "seus" | verde escuro | verde claro |
-| `outros` | Trilha de loopback, elementos "dos outros" | azul escuro | azul claro |
-| `sucesso` | Confirmação, término correto | verde | verde |
-| `erro` | Falha, RNF-U02 | vermelho | vermelho |
-| `atencao` | Advertência não bloqueante (ex.: trilha sem sinal) | amarelo/laranja | amarelo |
-| `neutro` | Texto comum | cor padrão do terminal | cor padrão do terminal |
+Mais simples do que a primeira versão deste documento previa. Em vez de seis papéis semânticos com cor própria, o sistema tem **uma cor de identidade** e um neutro:
 
-Valores de RGB exatos ficam para a implementação, não para este documento — travar hexadecimal aqui seria decisão prematura antes de ver o resultado no terminal real.
+| Papel | Cor | Uso |
+|---|---|---|
+| **Principal** | `#DFB878` (dourado) | Cor de identidade do Cronista. Trilha `voce` no medidor de sinal; reservado para banner, títulos e destaques quando existirem |
+| **Neutro** | `#A6A6A6` (cinza, sem calor nenhum) | Trilha `outros`, e qualquer elemento que não deva competir com a cor principal |
+| **Apagado** | `#2A2A2A` | Estado "sem sinal" do medidor de LED — nunca preto puro, pra continuar visível como parte da escada |
+
+**`erro`, `sucesso` e `atenção` ficam deliberadamente em aberto.** A primeira versão deste documento inventou uma paleta narrativa de seis cores (tema "manuscrito iluminado") sem o usuário ter pedido — corrigido depois que ele apontou que só havia dado uma cor, o dourado, como identidade principal. Fica registrado o erro para não repetir: **não inventar papel de cor que não foi pedido.** Esses três papéis são decididos quando o CLI realmente precisar deles (mensagem de erro, confirmação de sucesso), não antes.
 
 ## 5. Mecânica técnica
 
@@ -63,27 +62,35 @@ Primitivas do Rich usadas, e por que cada uma:
 | Região que se redesenha sem piscar | `rich.live.Live` — resolve o mesmo problema que o artigo resolveu com `readline.cursorTo()` + `clearScreenDown()` |
 | Indicador de espera em chamada de rede | `rich.status.Status` |
 | Barra de progresso | `rich.progress.Progress` |
-| Texto colorido por papel semântico | `rich.style.Style`, mapeado por tabela de papéis (§4) |
-| Barra de gradiente (RF-05) | Renderização própria sobre `rich.console.Console`, um caractere por vez com cor RGB interpolada — mesma lógica do protótipo em `scripts/preview_gradient_bar.py` |
+| Texto na cor de identidade ou neutro | `rich.style.Style`, com os dois tons de §4 |
+| Medidor de LED (RF-05) | `rich.text.Text` com um estilo por linha (bloco cheio `██`), ligado ou apagado — `cronista/client/signal_bar.py` |
 
 **Detecção de capacidade — a parte que o Rich resolve de graça.** O artigo do GitHub implementou detecção de tema e modo leitor de tela à mão. O `Console` do Rich detecta sozinho:
 
-- `color_system`: `truecolor`, `256`, `standard` (16 cores) ou `None` — a barra de gradiente degrada de suave para blocos de cor para sem cor, automaticamente
+- `color_system`: `truecolor`, `256`, `standard` (16 cores) ou `None` — o dourado (`#DFB878`) e o cinza neutro se aproximam da cor mais próxima disponível automaticamente, sem código extra
 - `NO_COLOR` no ambiente — desliga cor por completo, respeitando o padrão que a comunidade de terminal já usa
 - `console.is_terminal` — falso quando a saída é redirecionada; a animação nem tenta rodar
 
-Isso é o que torna razoável usar gradiente aqui, mesmo o artigo do GitHub tendo evitado: o risco de quebrar em terminal antigo existe, mas a biblioteca já trata a queda de qualidade sozinha, em vez de exigir código próprio para cada caso.
+Como o medidor de sinal final usa só duas cores fixas (§4), não estados discretos gerados por interpolação, a degradação automática do Rich importa menos aqui do que importaria para um gradiente — mas segue sendo o que protege qualquer cor futura (banner, quando existir) sem exigir tratamento manual por terminal.
 
-## 6. Barra de gradiente: como funciona
+## 6. Medidor de LED: como funciona
 
-A técnica, testada e aprovada pelo usuário em `scripts/preview_gradient_bar.py` antes de entrar na spec:
+Duas tentativas antes desta, ambas testadas de verdade no terminal e descartadas por não agradar, não por limitação técnica — vale registrar o processo, não só o resultado:
 
-1. A barra é uma sequência de caracteres de bloco (`▁▂▃▄▅▆▇█`)
-2. Cada posição na largura da barra tem uma cor interpolada entre dois papéis semânticos (ex.: `sucesso` → `atencao` → `erro`, para um medidor de volume)
-3. O nível atual (0 a 1) determina quantos caracteres aparecem preenchidos
-4. Redesenha na mesma região, sem imprimir linha nova, no ritmo de ~75ms (§1)
+**Tentativa 1 — barra de gradiente contínuo.** Cor interpolada por posição ao longo de uma barra horizontal (`▁▂▃▄▅▆▇█`), do tipo verde→amarelo→vermelho. Rejeitada: "não tá pixelizado".
 
-**Não há arte pré-desenhada aqui.** Ao contrário do banner (§7), a barra é calculada em tempo real a partir de um valor (nível de áudio, percentual de progresso) — não existe "quadro" para autorar, só a função que traduz valor em caracteres e cor.
+**Tentativa 2 — painel com borda pulsando.** Cada trilha num container com título, a cor da borda variando de apagada a viva conforme o volume, com um ponto central fazendo o mesmo. Rejeitada: "não faz nenhum sentido".
+
+**Versão final — escada de LED vertical**, inspirada no [cava](https://github.com/karlstav/cava) (Console Audio Visualizer, um clássico do terminal Linux): blocos sólidos (`██`) em estados **discretos** ligado ou apagado, sem interpolação de brilho nem de posição.
+
+1. Cada trilha é uma coluna de 10 células, de cima para baixo
+2. O nível atual (0 a 1) determina quantas células, contando de baixo, ficam "acesas" — as demais ficam na cor apagada (§4)
+3. `voce` acende na cor principal (dourado); `outros`, no neutro (cinza) — a mesma distinção de cor que diferencia as trilhas em qualquer lugar do sistema
+4. Redesenha a cada atualização de nível, no ritmo de ~75ms (§1), via `rich.live.Live`
+
+**Por que "pixelizado" importa aqui.** Estados discretos, sem gradiente nem interpolação suave, é o que dá a textura de equipamento de áudio retrô — e coincide, sem ter sido o objetivo original, com o próprio artigo do GitHub: eles também usam blocos, não gradiente contínuo. A primeira tentativa deste projeto tinha se afastado disso; a versão final voltou a convergir.
+
+**Não há arte pré-desenhada aqui.** Ao contrário do banner (§7), o medidor é calculado em tempo real a partir de um valor (nível de áudio) — não existe "quadro" para autorar, só a função que traduz nível em células acesas.
 
 ## 7. Formato dos ativos do banner
 
@@ -95,7 +102,7 @@ O banner de abertura, ao contrário da barra, é arte de verdade — alguém des
 
 O que foi pedido explicitamente: testar antes de integrar.
 
-**Já testado.** `scripts/preview_gradient_bar.py` — protótipo descartável, sem dependência do projeto, que reproduziu a técnica de gradiente truecolor no terminal real do usuário. Aprovado. Vira a referência de comportamento para a implementação real dentro de `cronista/client/`, e será removido quando ela existir.
+**Já testado.** Quatro protótipos descartáveis, testados de verdade no terminal do usuário: gradiente contínuo, quatro variações de paleta (arco-íris, VU clássico, cor sólida, duas tonalidades), painel com borda pulsando, e a escada de LED final. Os três primeiros foram removidos do repositório depois da decisão — não há razão para manter código de uma direção descartada. `scripts/preview_led_meter.py` é o único que sobrevive, como referência de comportamento para `cronista/client/signal_bar.py`, e será removido quando o medidor estiver de fato integrado ao comando `rec` (Fase 2, etapa 5).
 
 **A testar quando o banner existir.** `scripts/preview_banner.py`, no mesmo espírito: reproduz os quadros do banner isoladamente, sem precisar rodar o CLI inteiro, para iterar no desenho rápido.
 
