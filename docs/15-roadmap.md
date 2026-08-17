@@ -42,7 +42,9 @@ Worker em processo separado, consumindo a fila do banco. Detecção de fala, tra
 
 **Pronto quando:** uma reunião de 1 hora é transcrita em menos de 1 hora, com falantes corretos, e a linha de base de WER está medida.
 
-**Pré-requisito de ambiente:** NVIDIA Container Toolkit instalado no WSL. A GPU já está visível dentro do WSL nesta máquina; o toolkit é o que falta para o container alcançá-la.
+**Pré-requisito de ambiente: ✅ resolvido em 2026-08-17.** NVIDIA Container Toolkit 1.20.0 instalado no WSL e verificado — `docker run --rm --gpus all ubuntu nvidia-smi` enxerga a RTX 4060 de dentro do container.
+
+**Restrição medida na mesma verificação:** o desktop do Windows consome ~1,5–2 GB de VRAM, deixando ~6,3 GB reais dos 8 GB nominais. O Whisper cabe com pouca folga — ver [ADR-0014](adr/0014-worker-em-container-com-gpu.md).
 
 **O maior risco do projeto foi endereçado antes da implementação.** `ctranslate2` com CUDA convivendo com as dependências de LangChain deixou de ser problema com o worker em container ([ADR-0014](adr/0014-worker-em-container-com-gpu.md)): as bibliotecas de CUDA ficam na imagem e o ambiente da API nunca as vê.
 

@@ -18,14 +18,22 @@ Surgiu a sugestão de manter uma máquina virtual com uma imagem do Whisper semp
 
 ### O orçamento de memória de vídeo
 
-A restrição que governa o desenho:
+A restrição que governa o desenho. Os valores da primeira linha são **medidos nesta máquina**; os demais são estimativas a confirmar:
 
-| Modelo | VRAM aproximada |
+| Item | VRAM |
 |---|---|
-| Whisper `large-v3` int8_float16 | 4–5 GB |
-| Modelo de linguagem 8B quantizado | 5–6 GB |
+| **Linha de base do Windows** (desktop, navegador, editor) | **~1,5–2 GB · medido** |
+| Total da RTX 4060 Laptop | 8,0 GB |
+| **Disponível de fato** | **~6,3 GB** |
+| Whisper `large-v3` int8_float16 | 4–5 GB (estimado) |
+| Modelo de linguagem 8B quantizado | 5–6 GB (estimado) |
 
-Os dois não cabem simultaneamente em 8 GB. **Transcrever e resumir são operações mutuamente exclusivas nesta máquina** — o que vale para container ou execução nativa, indiferentemente.
+Duas conclusões:
+
+1. **Transcrever e resumir são operações mutuamente exclusivas nesta máquina** — o que vale para container ou execução nativa, indiferentemente.
+2. **A margem do Whisper é estreita.** Ele cabe nos ~6,3 GB, mas com pouca folga: abrir mais abas do navegador ou um jogo durante a transcrição pode estourar. O caminho de exceção FE-01 do UC-05 — nova tentativa com configuração de menor consumo — tende a ser exercitado com mais frequência do que o desenho inicial supunha, e não deve ser tratado como caso raro.
+
+*A linha de base não é fixa: varia com o que está aberto. Medida em 2026-08-17 com uso típico de desktop, `nvidia-smi` reportou 1886 MiB ocupados e 27% de utilização em ociosidade.*
 
 ### Onde fica o áudio
 

@@ -52,9 +52,11 @@ Custo em disco: cerca de 115 MB por hora por trilha; 230 MB por hora de reunião
 
 ### 3.1 Memória de vídeo
 
-`large-v3` quantizado ocupa cerca de metade dos 8 GB disponíveis. O modelo de linguagem do resumo disputa a mesma memória, e é por isso que o resumo automático só dispara **depois** que a transcrição libera o modelo ([07-arquitetura.md](07-arquitetura.md) §3).
+A GPU tem 8 GB, mas o desktop do Windows já consome ~1,5–2 GB (medido), então o orçamento real é de **~6,3 GB**. `large-v3` quantizado ocupa 4–5 GB disso — cabe, mas **com pouca folga**. O modelo de linguagem do resumo disputa a mesma memória, e é por isso que o resumo automático só dispara **depois** que a transcrição libera o modelo ([07-arquitetura.md](07-arquitetura.md) §3).
 
 Faltando memória, o worker tenta uma vez com configuração menor antes de desistir. Desistindo, marca falha e **preserva o áudio** — a reunião continua elegível a reprocessamento (UC-05, FE-01).
+
+**Esse caminho de exceção não é raro.** Com margem estreita, basta abrir mais abas do navegador ou um jogo durante a transcrição para estourar. A nova tentativa com configuração menor deve ser tratada como comportamento esperado, não como último recurso.
 
 ## 4. Vocabulário de domínio
 
