@@ -1,4 +1,4 @@
-# API — Contrato
+# API · Contrato
 
 > **Versão:** 1.0 · **Última atualização:** 2026-08-12
 > **Nível deste documento: contrato.** Define quais endpoints existem, o que recebem e o que devolvem. Esquemas campo a campo pertencem ao código — ver §6.

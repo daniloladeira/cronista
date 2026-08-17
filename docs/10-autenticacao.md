@@ -1,4 +1,4 @@
-# Autenticação — Contrato
+# Autenticação · Contrato
 
 > **Versão:** 1.0 · **Última atualização:** 2026-08-12
 > Decisão correspondente: [0011](adr/0011-jwt-usuario-unico.md)

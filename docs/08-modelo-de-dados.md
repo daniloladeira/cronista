@@ -7,7 +7,7 @@
 
 **O banco guarda metadados e texto. O áudio fica no disco.**
 
-Uma reunião de uma hora em duas trilhas ocupa cerca de 230 MB em WAV; a transcrição correspondente ocupa cerca de 50 KB. Guardar áudio como campo binário incharia o banco, tornaria o backup impraticável e não traria nenhuma capacidade — o áudio é sempre lido inteiro, por caminho, nunca consultado por conteúdo.
+Uma reunião de uma hora em duas trilhas ocupa cerca de 230 MB em WAV; a transcrição correspondente ocupa cerca de 50 KB. Guardar áudio como campo binário incharia o banco, tornaria o backup impraticável e não traria nenhuma capacidade: o áudio é sempre lido inteiro, por caminho, nunca consultado por conteúdo.
 
 O banco armazena a **referência**, sempre relativa a uma raiz configurável, mais a máquina de origem. Caminho absoluto não significa nada em outra máquina, e essa é a razão de RF-07.
 
@@ -78,7 +78,7 @@ classDiagram
     Track "1" o-- "0..*" Segment : origem
 ```
 
-**Por que `Track` existe como entidade.** O planejamento inicial previa apenas três tabelas. Ao detalhar UC-10, ficou claro que a trilha tem atributos próprios — falante, caminho, dispositivo de origem, duração — e que a gravação produz duas enquanto a importação produz uma. Embutir isso em colunas fixas de `Meeting` (`mic_path`, `system_path`) travaria o modelo em exatamente dois canais e quebraria na primeira importação.
+**Por que `Track` existe como entidade.** O planejamento inicial previa apenas três tabelas. Ao detalhar UC-10, ficou claro que a trilha tem atributos próprios (falante, caminho, dispositivo de origem, duração) e que a gravação produz duas enquanto a importação produz uma. Embutir isso em colunas fixas de `Meeting` (`mic_path`, `system_path`) travaria o modelo em exatamente dois canais e quebraria na primeira importação.
 
 ## 4. Esquema
 
@@ -110,7 +110,7 @@ CREATE INDEX meetings_queue_idx   ON meetings (status, started_at);
 CREATE INDEX meetings_started_idx ON meetings (started_at DESC);
 ```
 
-`meetings_queue_idx` serve à seleção do worker — é o índice da fila (§4.5).
+`meetings_queue_idx` serve à seleção do worker: é o índice da fila (§4.5).
 
 ### 4.2 `tracks`
 
@@ -150,7 +150,7 @@ CREATE INDEX segments_meeting_idx ON segments (meeting_id, start_ms);
 CREATE INDEX segments_search_idx  ON segments USING GIN (search);
 ```
 
-**A coluna `search` é o coração da busca.** Ela é gerada e mantida pelo próprio banco — não há trigger para escrever, nem risco de índice divergir do conteúdo. O dicionário `portuguese` aplica stemming: "decidimos", "decidido" e "decisão" colapsam na mesma raiz, e buscar por uma encontra as outras.
+**A coluna `search` é o coração da busca.** Ela é gerada e mantida pelo próprio banco, não há trigger para escrever, nem risco de índice divergir do conteúdo. O dicionário `portuguese` aplica stemming: "decidimos", "decidido" e "decisão" colapsam na mesma raiz, e buscar por uma encontra as outras.
 
 Essa é a razão técnica de PostgreSQL ter substituído SQLite no projeto. O mecanismo equivalente do SQLite não faz stemming de português, e num sistema cuja tese é qualidade em pt-BR isso deixaria de ser detalhe.
 
@@ -170,7 +170,7 @@ CREATE TABLE summaries (
 CREATE INDEX summaries_meeting_idx ON summaries (meeting_id, generated_at DESC);
 ```
 
-Relação 1:N, jamais 1:1 (RN-03). Trocar de modelo ou de prompt e perder o resultado anterior impediria saber se houve melhora — e medir isso é o critério de sucesso do projeto ([14-plano-de-testes.md](14-plano-de-testes.md)).
+Relação 1:N, jamais 1:1 (RN-03). Trocar de modelo ou de prompt e perder o resultado anterior impediria saber se houve melhora, e medir isso é o critério de sucesso do projeto ([14-plano-de-testes.md](14-plano-de-testes.md)).
 
 ### 4.5 Por que `CHECK` e não `ENUM`
 
@@ -200,7 +200,7 @@ stateDiagram-v2
     note right of pendente_envio
         gravando, pendente_envio e enviando
         são estados LOCAIS do cliente.
-        Não existem no banco — durante uma
+        Não existem no banco, durante uma
         queda da API não há banco a consultar.
     end note
 ```
@@ -226,7 +226,7 @@ SELECT * FROM meetings
  LIMIT 1;
 ```
 
-`FOR UPDATE SKIP LOCKED` garante que dois workers jamais peguem a mesma reunião — a única condição de corrida real do sistema. `transcribing → recorded` na inicialização devolve à fila o que ficou preso por interrupção (UC-05, FE-03).
+`FOR UPDATE SKIP LOCKED` garante que dois workers jamais peguem a mesma reunião, a única condição de corrida real do sistema. `transcribing → recorded` na inicialização devolve à fila o que ficou preso por interrupção (UC-05, FE-03).
 
 ## 6. Diagrama entidade-relacionamento
 
@@ -287,7 +287,7 @@ erDiagram
 
 | Escolha | Razão |
 |---|---|
-| `uuid` (versão 7), gerado na aplicação | Duas máquinas gravando offline produziriam ids sequenciais colidentes. UUIDv7 evita a colisão e, ao contrário das versões anteriores, é ordenável por tempo — o que preserva localidade no índice |
+| `uuid` (versão 7), gerado na aplicação | Duas máquinas gravando offline produziriam ids sequenciais colidentes. UUIDv7 evita a colisão e, ao contrário das versões anteriores, é ordenável por tempo, o que preserva localidade no índice |
 | `timestamptz`, sempre em UTC | Fuso e horário de verão são fonte clássica de defeito. A conversão para hora local é responsabilidade da apresentação |
 | Caminhos relativos + `host` | Um caminho absoluto não resolve em outra máquina. Ver RF-07 |
 
@@ -298,7 +298,7 @@ Política configurável, aplicada por UC-09.
 | Parâmetro | Efeito |
 |---|---|
 | `keep_audio_days` | Idade a partir da qual o áudio é tratado |
-| `audio_policy = compress` | Converte para Opus — cerca de 3 MB por hora, contra 230 MB em WAV |
+| `audio_policy = compress` | Converte para Opus, cerca de 3 MB por hora, contra 230 MB em WAV |
 | `audio_policy = delete` | Remove os arquivos e marca `audio_state = 'removed'` |
 
 **Duas salvaguardas:**
@@ -326,6 +326,6 @@ Consequência direta de trocar SQLite por PostgreSQL: backup deixou de ser copia
 |---|---|---|
 | Banco | `pg_dump` para arquivo comprimido | Diária, automatizada |
 | Áudio | Cópia do diretório `recordings\` | Conforme a política de retenção |
-| Segredos | `.env` — fora do controle de versão, guardado à parte | Na mudança |
+| Segredos | `.env`, fora do controle de versão, guardado à parte | Na mudança |
 
 RNF-R04 exige que a restauração seja **testada**, não apenas configurada. Um backup nunca restaurado é uma suposição, não uma garantia. Ver CT-38.

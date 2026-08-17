@@ -1,4 +1,4 @@
-# Resumo — Contrato
+# Resumo · Contrato
 
 > **Versão:** 1.0 · **Última atualização:** 2026-08-12
 > Decisão correspondente: [0005](adr/0005-langchain-na-camada-de-resumo.md)

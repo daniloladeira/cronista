@@ -1,4 +1,4 @@
-# Linha de Comando — Contrato
+# Linha de Comando · Contrato
 
 > **Versão:** 1.0 · **Última atualização:** 2026-08-12
 > Decisão correspondente: [0006](adr/0006-cli-antes-de-desktop.md)
