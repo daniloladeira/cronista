@@ -79,4 +79,6 @@ Nomes exatos de flag, formato das tabelas de saída, texto literal das mensagens
 
 Aparência (cor, animação, barra de gradiente) é tratada à parte, em [17-identidade-visual-cli.md](17-identidade-visual-cli.md), para não misturar comportamento com apresentação.
 
+**Ideias registradas para a Fase 5, não decididas ainda:** transcrição compacta por padrão (`voce: texto`, uma linha por fala) com verbosidade maior opcional por flag (timestamp em linha própria); saída estruturada (`--json`) em `list`/`buscar` para permitir scripting sobre o próprio acervo. Observadas no granola-cli durante pesquisa de referência; não viram requisito até a Fase 5 decidir se valem a pena.
+
 O que está fixado é o que precisa ser decidido antes: quais comandos existem, **quais funcionam offline** e como o programa comunica falha.
