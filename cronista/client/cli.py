@@ -105,11 +105,17 @@ def rec(
 ) -> None:
     """Grava a reunião até Ctrl+C (UC-03). Funciona com a API fora do ar."""
     try:
-        mic_device = capture.get_input_device(mic)
+        mic_device = capture.get_input_device(mic)  # None = sem microfone (UC-02 FE-01)
         speaker_device = capture.get_output_device(saida)
+        loopback_device = capture.get_loopback_device(speaker_device)  # UC-02 FE-02
     except capture.DeviceError as exc:
         typer.echo(f"Erro: {exc}", err=True)
         raise typer.Exit(code=4)
+
+    if mic_device is None:
+        typer.echo(
+            "Aviso: nenhum microfone disponível — gravando só a trilha 'outros'.", err=True
+        )
 
     started_at = datetime.now(UTC)
     title = titulo or f"Reunião {started_at:%Y-%m-%d %H:%M}"  # UC-03 FA-01
@@ -126,7 +132,7 @@ def rec(
         result = capture.record(
             output_dir,
             mic_device=mic_device,
-            speaker_device=speaker_device,
+            loopback_device=loopback_device,
             stop_event=stop_event,
             pause_event=pause_event,
             on_level=bar.update,

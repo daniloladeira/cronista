@@ -126,16 +126,26 @@ def test_falha_ao_retomar_marca_erro_sem_travar_a_thread(tmp_path):
     assert sf.info(path).frames > 0  # o que já tinha sido gravado continua íntegro
 
 
-@pytest.mark.parametrize("name", [None, "Fantasma"])
-def test_get_input_device_propaga_falha_como_device_error(monkeypatch, name):
+def test_get_input_device_nome_explicito_e_falha_propaga_device_error(monkeypatch):
+    # FA-02: o usuário pediu um dispositivo específico que não existe — erro.
+    def _raise(*_args, **_kwargs):
+        raise RuntimeError("sem dispositivo")
+
+    monkeypatch.setattr(capture.sc, "get_microphone", _raise)
+
+    with pytest.raises(capture.DeviceError):
+        capture.get_input_device("Fantasma")
+
+
+def test_get_input_device_sem_nome_e_sem_microfone_devolve_none(monkeypatch):
+    # UC-02 FE-01: ausência de microfone é degradação esperada, não erro —
+    # cronista rec segue só com a trilha 'outros' (quem chama avisa disso).
     def _raise(*_args, **_kwargs):
         raise RuntimeError("sem dispositivo")
 
     monkeypatch.setattr(capture.sc, "default_microphone", _raise)
-    monkeypatch.setattr(capture.sc, "get_microphone", _raise)
 
-    with pytest.raises(capture.DeviceError):
-        capture.get_input_device(name)
+    assert capture.get_input_device(None) is None
 
 
 def test_get_output_device_por_nome_usa_get_speaker(monkeypatch):
@@ -150,3 +160,40 @@ def test_get_input_device_sem_nome_usa_padrao_do_sistema(monkeypatch):
     monkeypatch.setattr(capture.sc, "default_microphone", lambda: sentinel)
 
     assert capture.get_input_device(None) is sentinel
+
+
+def test_get_output_device_nome_inexistente_e_device_error(monkeypatch):
+    def _raise(*_args, **_kwargs):
+        raise RuntimeError("sem dispositivo")
+
+    monkeypatch.setattr(capture.sc, "get_speaker", _raise)
+
+    with pytest.raises(capture.DeviceError):
+        capture.get_output_device("Fantasma")
+
+
+def test_get_loopback_device_indisponivel_e_device_error(monkeypatch):
+    def _raise(*_args, **_kwargs):
+        raise RuntimeError("sem loopback")
+
+    monkeypatch.setattr(capture.sc, "get_microphone", _raise)
+    speaker = capture.DeviceInfo(name="Alto-falantes", is_default=True)
+
+    with pytest.raises(capture.DeviceError):
+        capture.get_loopback_device(speaker)
+
+
+def test_get_loopback_device_disponivel_devolve_o_microfone_de_loopback(monkeypatch):
+    sentinel = object()
+    recebido = {}
+
+    def _get_microphone(name, include_loopback):
+        recebido["name"] = name
+        recebido["include_loopback"] = include_loopback
+        return sentinel
+
+    monkeypatch.setattr(capture.sc, "get_microphone", _get_microphone)
+    speaker = capture.DeviceInfo(name="Alto-falantes", is_default=True)
+
+    assert capture.get_loopback_device(speaker) is sentinel
+    assert recebido == {"name": "Alto-falantes", "include_loopback": True}

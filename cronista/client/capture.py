@@ -66,13 +66,16 @@ def list_output_devices() -> list[DeviceInfo]:
     return [DeviceInfo(s.name, s.name == default.name) for s in sc.all_speakers()]
 
 
-def get_input_device(name: str | None = None) -> object:
-    """UC-03 FA-02: nome ausente usa o padrão do sistema."""
+def get_input_device(name: str | None = None) -> object | None:
+    """Nome explícito e não encontrado é erro (UC-03 FA-02: o usuário pediu
+    algo que não existe). Sem nome e sem microfone algum é degradação
+    esperada, não erro — devolve `None` (UC-02 FE-01): `rec` segue só com
+    a trilha `outros`, e é responsabilidade de quem chama avisar disso."""
     if name is None:
         try:
             return sc.default_microphone()
-        except Exception as exc:  # noqa: BLE001 — soundcard não documenta a exceção exata
-            raise DeviceError("Nenhum microfone disponível.") from exc
+        except Exception:  # noqa: BLE001 — soundcard não documenta a exceção exata
+            return None
     try:
         return sc.get_microphone(name)
     except Exception as exc:  # noqa: BLE001
@@ -89,6 +92,17 @@ def get_output_device(name: str | None = None) -> object:
         return sc.get_speaker(name)
     except Exception as exc:  # noqa: BLE001
         raise DeviceError(f"Dispositivo de saída '{name}' não encontrado.") from exc
+
+
+def get_loopback_device(speaker: object) -> object:
+    """UC-02 FE-02: sem loopback não há trilha `outros` — inviabiliza a
+    gravação, então isso é erro (diferente da ausência de microfone)."""
+    try:
+        return sc.get_microphone(speaker.name, include_loopback=True)
+    except Exception as exc:  # noqa: BLE001
+        raise DeviceError(
+            f"'{speaker.name}' não expõe captura de loopback. Selecione outra saída com --saida."
+        ) from exc
 
 
 @dataclass
@@ -185,14 +199,19 @@ class _TrackRecorder(threading.Thread):
 
 def record(
     output_dir: Path,
-    mic_device: object | None = None,
-    speaker_device: object | None = None,
+    mic_device: object | None,
+    loopback_device: object,
     stop_event: threading.Event | None = None,
     pause_event: threading.Event | None = None,
     on_level: LevelCallback | None = None,
     on_pause_toggle: PauseCallback | None = None,
 ) -> RecordingResult:
-    """Grava as duas trilhas até stop_event ser sinalizado, ou até Ctrl+C.
+    """Grava até stop_event ser sinalizado, ou até Ctrl+C.
+
+    `mic_device=None` grava só `outros` (UC-02 FE-01: sem microfone
+    disponível, degradação esperada — quem chama já decidiu isso e avisou
+    o usuário). `loopback_device` é obrigatório: sem ele não há propósito
+    em gravar (UC-02 FE-02).
 
     RN-08: os arquivos são escritos em disco local; nenhuma chamada de rede
     acontece aqui. Se uma trilha falhar no meio (dispositivo removido), a
@@ -206,23 +225,32 @@ def record(
     stop_event = stop_event or threading.Event()
     pause_event = pause_event or threading.Event()
 
-    mic = mic_device or sc.default_microphone()
-    speaker = speaker_device or sc.default_speaker()
-    loopback = sc.get_microphone(speaker.name, include_loopback=True)
-
-    voce = _TrackRecorder("voce", mic, output_dir / "voce.wav", stop_event, pause_event, on_level)
-    outros = _TrackRecorder(
-        "outros", loopback, output_dir / "outros.wav", stop_event, pause_event, on_level
+    threads: list[_TrackRecorder] = []
+    if mic_device is not None:
+        threads.append(
+            _TrackRecorder(
+                "voce", mic_device, output_dir / "voce.wav", stop_event, pause_event, on_level
+            )
+        )
+    threads.append(
+        _TrackRecorder(
+            "outros",
+            loopback_device,
+            output_dir / "outros.wav",
+            stop_event,
+            pause_event,
+            on_level,
+        )
     )
 
-    voce.start()
-    outros.start()
+    for thread in threads:
+        thread.start()
 
     try:
         # join() com timeout, em loop: um join() simples não é interrompido
         # de forma confiável por Ctrl+C em todas as plataformas. O mesmo
         # intervalo serve pra checar a tecla de pausa sem thread à parte.
-        while voce.is_alive() or outros.is_alive():
+        while any(thread.is_alive() for thread in threads):
             if sys.platform == "win32":
                 while msvcrt.kbhit():
                     if msvcrt.getch() == PAUSE_KEY:
@@ -232,15 +260,15 @@ def record(
                             pause_event.set()
                         if on_pause_toggle is not None:
                             on_pause_toggle(pause_event.is_set())
-            voce.join(timeout=0.1)
-            outros.join(timeout=0.1)
+            for thread in threads:
+                thread.join(timeout=0.1)
     except KeyboardInterrupt:
         stop_event.set()
-        voce.join()
-        outros.join()
+        for thread in threads:
+            thread.join()
 
     result = RecordingResult()
-    for thread in (voce, outros):
+    for thread in threads:
         stat = thread.path.stat() if thread.path.exists() else None
         result.tracks.append(
             TrackResult(

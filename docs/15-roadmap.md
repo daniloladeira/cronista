@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Versão:** 1.0 · **Última atualização:** 2026-08-12
+> **Versão:** 1.1 · **Última atualização:** 2026-08-17
 
 ## 1. Ordem e critério
 
@@ -37,6 +37,8 @@ O coração do sistema. Captura WASAPI em duas trilhas, escrita incremental em d
 **Pronto quando:** uma reunião real é gravada em dois WAV corretos, aparece no banco, e **CT-08 passa**: a API derrubada no meio da gravação não custa o áudio.
 
 **Risco já eliminado:** a captura de loopback foi verificada nesta máquina antes do planejamento. A biblioteca enxerga a saída padrão e gravou 1 segundo real a 16 kHz mono.
+
+**Concluída em 2026-08-17.** `cronista rec`/`devices` gravando de verdade nesta máquina, com pausar/retomar (RF-31) sem truncar o WAV; registro na API com renovação silenciosa de token; `pending.json` e `cronista sync` cobrindo API indisponível (CT-33 a CT-35); CT-08 verificado tanto com hardware real (derrubando o container no meio de uma gravação) quanto em teste automatizado de ponta a ponta (`tests/test_ct08_api_indisponivel.py`). CT-05, CT-06, CT-07, CT-09 a CT-11 e CT-42 também cobertos por teste. `tests/test_capture_pause.py`, `test_capture_record.py`, `test_reconciliation.py` e `test_ct08_api_indisponivel.py` simulam hardware e falha de API sem depender de microfone real — o que exigiu dispositivo real foi verificado à parte, não fica preso à suíte.
 
 ### Fase 3 · Transcrição
 
