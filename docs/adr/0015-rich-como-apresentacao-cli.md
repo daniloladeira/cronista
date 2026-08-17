@@ -1,8 +1,10 @@
 # ADR-0015 · Rich como biblioteca de apresentação do CLI
 
-- **Status:** aceito
+- **Status:** aceito, parcialmente revertido por [ADR-0016](0016-textual-para-navegacao.md)
 - **Data:** 2026-08-17
 - **Requisitos relacionados:** RF-05, RNF-U01, RNF-U02, RNF-U03 (nenhum requisito novo, ver [17-identidade-visual-cli.md](../17-identidade-visual-cli.md))
+
+> **Nota de 2026-08-17, mesmo dia:** o gatilho de reversão deste ADR (ver seção própria, abaixo) disparou para `list`, `ler` e `buscar` — o usuário pediu navegação persistente para essas telas. Ver [ADR-0016](0016-textual-para-navegacao.md). Este ADR continua valendo integralmente para `rec`, `login`, `devices`, `importar` e `sync`.
 
 ## Contexto
 

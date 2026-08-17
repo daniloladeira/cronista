@@ -1,7 +1,8 @@
 # Identidade Visual e Animação do CLI
 
-> **Versão:** 1.1 · **Última atualização:** 2026-08-17
-> Decisão de biblioteca: [ADR-0015](adr/0015-rich-como-apresentacao-cli.md).
+> **Versão:** 1.2 · **Última atualização:** 2026-08-17
+> Decisões de biblioteca: [ADR-0015](adr/0015-rich-como-apresentacao-cli.md) (Rich, comandos que rodam e terminam), [ADR-0016](adr/0016-textual-para-navegacao.md) (Textual, painel navegável de `list`/`ler`/`buscar`).
+> Este documento trata da parte em Rich — banner, indicador de sinal, spinners. O painel Textual ganha especificação visual própria quando a Fase 5 chegar.
 > **Este documento não introduz requisito novo.** Especifica como RF-05, RNF-U01, RNF-U02 e RNF-U03 se manifestam na tela. Se algum dia divergir de [11-cli.md](11-cli.md), aquele documento é quem define comportamento; este define aparência.
 
 ## 1. Motivação e referência
@@ -122,13 +123,14 @@ O que foi pedido explicitamente: testar antes de integrar.
 |---|---|
 | Editor de frames dedicado | Não se paga na escala deste projeto (§7) |
 | Animação em todo comando, sem critério | Contraria o princípio de "onde há espera real" (§2) |
-| Aplicativo de terminal persistente (Textual) | Decisão explícita do ADR-0015, com gatilho de reversão próprio |
+| Aplicativo de terminal persistente **em `rec`** | O gatilho de reversão do ADR-0015 disparou, mas só para `list`/`ler`/`buscar` (ADR-0016). `rec` continua fora, de propósito — é a operação irreversível do sistema |
 
 ## 10. Documentos relacionados
 
 | Documento | Papel |
 |---|---|
-| [ADR-0015](adr/0015-rich-como-apresentacao-cli.md) | Por que Rich, e não Textual |
+| [ADR-0015](adr/0015-rich-como-apresentacao-cli.md) | Por que Rich para os comandos que rodam e terminam |
+| [ADR-0016](adr/0016-textual-para-navegacao.md) | Por que Textual entrou depois, só para `list`/`ler`/`buscar` |
 | [ADR-0006](adr/0006-cli-antes-de-desktop.md) | A tensão que motivou a escolha |
 | [11-cli.md](11-cli.md) | Comportamento dos comandos; este documento trata só de aparência |
 | [03-requisitos.md](03-requisitos.md) | RF-05, RNF-U01 a RNF-U03 — os requisitos que este documento implementa visualmente |

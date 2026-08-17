@@ -1,13 +1,15 @@
 # Linha de Comando · Contrato
 
-> **Versão:** 1.1 · **Última atualização:** 2026-08-17
-> Decisões correspondentes: [0006](adr/0006-cli-antes-de-desktop.md), [0015](adr/0015-rich-como-apresentacao-cli.md)
+> **Versão:** 1.2 · **Última atualização:** 2026-08-17
+> Decisões correspondentes: [0006](adr/0006-cli-antes-de-desktop.md), [0015](adr/0015-rich-como-apresentacao-cli.md), [0016](adr/0016-textual-para-navegacao.md)
 
 ## 1. Papel
 
 A linha de comando é a primeira interface, e serve de contrato para a interface desktop que virá depois (Fase 8). Tudo que ela faz, faz chamando a API, exceto capturar áudio e listar dispositivos, que são locais por natureza.
 
 O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
+
+**O CLI tem dois modelos de interação, não um só (ADR-0016).** A maioria dos comandos roda e termina — decorados com Rich (ADR-0015). `list`, `ler` e `buscar` convergem numa experiência navegável e persistente com Textual, porque o usuário pediu explicitamente poder navegar pelo acervo, ler transcrição trocando de aba e percorrer busca sem comando novo a cada passo. `rec` **fica de fora dessa navegação** de propósito — é a única operação irreversível do sistema (ADR-0012), e misturar isso com loop de evento foi exatamente o que o ADR-0006 evitou desde o início.
 
 ## 2. Comandos
 
@@ -18,13 +20,15 @@ O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 | `cronista rec` | Grava a reunião até interrupção | **não**¹ | UC-03 |
 | `cronista importar <arquivo>` | Importa áudio ou vídeo existente | sim | UC-04 |
 | `cronista sync` | Reenvia reuniões pendentes | sim | UC-11 |
-| `cronista list` | Lista reuniões com estado | sim | UC-07 |
-| `cronista ler <id>` | Mostra transcrição e resumos | sim | UC-07 |
-| `cronista buscar <termo>` | Busca no acervo | sim | UC-08 |
+| `cronista list` | Abre o painel navegável de reuniões² | sim | UC-07 |
+| `cronista ler <id>` | Abre o painel já focado numa reunião² | sim | UC-07 |
+| `cronista buscar <termo>` | Abre o painel com busca já preenchida² | sim | UC-08 |
 | `cronista resumir <id>` | Gera um novo resumo | sim | UC-06 |
 | `cronista excluir <id>` | Remove reunião, com confirmação | sim | UC-09 |
 
 ¹ **`cronista rec` funciona com a API fora do ar.** Grava em disco e marca pendência, sem falhar. É a materialização do ADR-0012 na interface, e a razão de `cronista sync` existir.
+
+² **`list`, `ler` e `buscar` são três portas de entrada para a mesma experiência navegável (ADR-0016), não três comandos independentes que imprimem e terminam.** Cada um abre o painel Textual num ponto de partida diferente — lista geral, uma reunião já aberta, ou busca já rodada — mas uma vez dentro, a navegação (setas, trocar de aba entre resumo/transcrição, nova busca) acontece na mesma tela, sem sair para rodar outro comando.
 
 ## 3. Comportamentos que o contrato garante
 
