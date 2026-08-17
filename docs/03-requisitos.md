@@ -48,7 +48,7 @@ Requisito não descreve solução. Onde uma solução específica é obrigatóri
 | **RF-14** | Descartar trechos sem fala antes de transcrever | RP-03 | Importante |
 | **RF-15** | Permitir reprocessar a transcrição de uma reunião já transcrita | RP-03 | Desejável |
 
-> **RF-13 é onde o projeto se diferencia.** As ferramentas de mercado transcrevem português genérico. Vocabulário de domínio é o que separa "Coopmed" de "coopermed" e nomes de medicamentos de ruído fonético.
+> **RF-13 é onde o projeto se diferencia.** As ferramentas de mercado transcrevem português genérico. Vocabulário de domínio é o que faz um nome próprio como "Vitalmed" sair escrito assim, e não como "vital med" ou "vitaumedi" — e o mesmo vale para nomes de medicamentos, que viram ruído fonético sem contexto.
 
 ### 1.4 Resumo
 
