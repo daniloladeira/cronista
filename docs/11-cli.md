@@ -1,6 +1,6 @@
 # Linha de Comando · Contrato
 
-> **Versão:** 1.2 · **Última atualização:** 2026-08-17
+> **Versão:** 1.3 · **Última atualização:** 2026-08-17
 > Decisões correspondentes: [0006](adr/0006-cli-antes-de-desktop.md), [0015](adr/0015-rich-como-apresentacao-cli.md), [0016](adr/0016-textual-para-navegacao.md)
 
 ## 1. Papel
@@ -24,6 +24,7 @@ O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 | `cronista ler <id>` | Abre o painel já focado numa reunião² | sim | UC-07 |
 | `cronista buscar <termo>` | Abre o painel com busca já preenchida² | sim | UC-08 |
 | `cronista resumir <id>` | Gera um novo resumo | sim | UC-06 |
+| `cronista reprocessar <id>` | Retranscreve, substituindo os segmentos antigos | sim | UC-05 (RF-15) |
 | `cronista excluir <id>` | Remove reunião, com confirmação | sim | UC-09 |
 
 ¹ **`cronista rec` funciona com a API fora do ar.** Grava em disco e marca pendência, sem falhar. É a materialização do ADR-0012 na interface, e a razão de `cronista sync` existir.

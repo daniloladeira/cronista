@@ -50,10 +50,21 @@ services:
   #     db:
   #       condition: service_healthy
   #   environment:
-  #     DATABASE_URL: ${DATABASE_URL}
+  #     # NÃO reaproveitar o DATABASE_URL do .env: aquele aponta pro host
+  #     # (127.0.0.1:5433, a porta remapeada). Dentro da rede do compose, o
+  #     # worker fala com o serviço "db" na porta interna do Postgres (5432).
+  #     DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+  #     # Idem: dentro do container a raiz do acervo é o ponto de montagem
+  #     # abaixo, não o caminho do Windows que está em DATA_ROOT no .env
+  #     # (docs/12-transcricao.md §8).
+  #     DATA_ROOT: /data
   #     WHISPER_MODEL: ${WHISPER_MODEL}
   #     WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE}
+  #     WHISPER_LANGUAGE: ${WHISPER_LANGUAGE}
   #     WHISPER_IDLE_UNLOAD_SECONDS: ${WHISPER_IDLE_UNLOAD_SECONDS}
+  #     WHISPER_VOCABULARY: ${WHISPER_VOCABULARY}
+  #     WHISPER_FALLBACK_COMPUTE_TYPE: ${WHISPER_FALLBACK_COMPUTE_TYPE}
+  #     WORKER_POLL_INTERVAL_SECONDS: ${WORKER_POLL_INTERVAL_SECONDS}
   #   volumes:
   #     # Acervo montado somente-leitura. Fica no Windows de propósito:
   #     # gravar é irreversível, ler é repetível (ADR-0012, ADR-0014).

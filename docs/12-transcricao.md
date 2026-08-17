@@ -1,7 +1,7 @@
 # Transcrição · Contrato
 
-> **Versão:** 1.0 · **Última atualização:** 2026-08-12
-> Decisões correspondentes: [0001](adr/0001-captura-local-duas-trilhas.md), [0002](adr/0002-faster-whisper-local.md)
+> **Versão:** 1.1 · **Última atualização:** 2026-08-17
+> Decisões correspondentes: [0001](adr/0001-captura-local-duas-trilhas.md), [0002](adr/0002-faster-whisper-local.md), [0014](adr/0014-worker-em-container-com-gpu.md)
 
 ## 1. Pipeline
 
@@ -78,8 +78,78 @@ RNF-P01 exige transcrever mais rápido que o tempo real. Com `large-v3` quantiza
 
 Duas trilhas dobram o trabalho, mas a detecção de fala remove boa parte: a trilha `voce` é majoritariamente silêncio quando os outros falam, e vice-versa.
 
-## 7. O que este documento não fixa
+## 7. Processo do worker
 
-Valores exatos de parâmetro do modelo: tamanho de janela, limiares de detecção de fala, número de candidatos. Esses se acertam medindo WER em áudio real, não decidindo antes.
+**Sem broker.** A fila é a própria coluna `meetings.status`, consultada com `FOR UPDATE SKIP LOCKED` — o mesmo mecanismo já usado pelo worker de resumo ([08-modelo-de-dados.md](08-modelo-de-dados.md) §5.2). O worker fala direto com o Postgres, não com a API.
 
-O que está fixado é o que muda a arquitetura: formato de captura, quantidade variável de trilhas, origem da atribuição de falante, e a regra de que falha nunca destrói áudio.
+```
+enquanto verdadeiro:
+    reunião ← seleciona (status='recorded', ORDER BY started_at,
+                          FOR UPDATE SKIP LOCKED, LIMIT 1)
+    se não há reunião:
+        dorme WORKER_POLL_INTERVAL_SECONDS
+        continua
+    processa(reunião)
+```
+
+**A fila só olha `recorded`.** Uma reunião em `transcription_failed` não volta pra fila sozinha — fica parada, com o áudio intacto, até `cronista reprocessar <id>` (§10) trazê-la de volta a `recorded`. É o mesmo caminho, com o mesmo rótulo "reprocessar", que uma reunião já transcrita com sucesso usa pra ser refeita ([08-modelo-de-dados.md](08-modelo-de-dados.md) §5, diagrama de estados) — um único comando cobre os dois casos, não uma retentativa automática silenciosa que poderia martelar a GPU repetidamente sem o usuário perceber.
+
+**Ciclo de uma reunião:**
+
+1. `status → transcribing`, com commit imediato — deixa o estado visível mesmo sem concorrência real hoje, e é o que a recuperação de inicialização (abaixo) enxerga se o processo cair no meio.
+2. Lê cada trilha do disco a partir de `DATA_ROOT/recordings/<audio_dir>/<path>` (mesma convenção do cliente e da API, [08-modelo-de-dados.md](08-modelo-de-dados.md) §2).
+3. Transcreve cada trilha (§1 a §4 deste documento).
+4. Mescla os segmentos em ordem cronológica (§5).
+5. Persiste os segmentos, substituindo os de uma tentativa anterior se houver (§10).
+6. `status → transcribed`.
+
+**Falha em qualquer passo de 2 a 5:** `status → transcription_failed`, a mensagem de erro grava em `meetings.error`, e os arquivos de áudio permanecem intocados — a transcrição nunca escreve nem apaga nada em `recordings/` (RNF-R03).
+
+**Recuperação na inicialização (CT-19).** Antes de entrar no loop, o worker roda:
+
+```sql
+UPDATE meetings SET status = 'recorded' WHERE status = 'transcribing';
+```
+
+Sem isso, uma reunião cujo worker caiu no meio da transcrição ficaria presa em `transcribing` para sempre — só o processo que morreu saberia tirá-la de lá.
+
+## 8. Configuração
+
+| Variável | Padrão | Papel |
+|---|---|---|
+| `WHISPER_MODEL` | `large-v3` | Modelo `faster-whisper` (§3) |
+| `WHISPER_COMPUTE_TYPE` | `int8_float16` | Quantização (§3) |
+| `WHISPER_LANGUAGE` | `pt` | Idioma fixo, sem detecção automática (§3) |
+| `WHISPER_IDLE_UNLOAD_SECONDS` | `300` | Ociosidade antes de descarregar o modelo da VRAM ([ADR-0014](adr/0014-worker-em-container-com-gpu.md)) |
+| `WHISPER_VOCABULARY` | vazio | Vocabulário de domínio, separado por vírgula (§4, RF-13) |
+| `WHISPER_FALLBACK_COMPUTE_TYPE` | `int8` | Quantização de segunda tentativa em falta de memória (§9) |
+| `WORKER_POLL_INTERVAL_SECONDS` | `5` | Intervalo entre consultas à fila quando vazia |
+
+Vive em `WorkerSettings` (`cronista/core/config.py`), seguindo a mesma lógica de separação já documentada nesse módulo: o worker precisa do banco e de `DATA_ROOT` pra ler as trilhas, mas não dos segredos de autenticação da API (`JWT_SECRET`, `AUTH_PASSWORD_HASH`).
+
+**Dentro do container, `DATA_ROOT` aponta para `/data`, não para o caminho do Windows.** O `docker-compose.yml` monta `${DATA_ROOT}:/data:ro` (a raiz do host, lida do `.env`, é só o *lado esquerdo* do bind mount) — a variável de ambiente que o worker lê de dentro do container é `/data`, um valor fixo, não a reinterpolação de `${DATA_ROOT}`. Ver §7 passo 2.
+
+## 9. Memória insuficiente: uma nova tentativa (§3.1)
+
+O mecanismo é fixado aqui; os valores exatos (RTX 4060, `large-v3`) já estão medidos e registrados em §3.1. Ao encontrar erro de memória insuficiente da GPU — seja carregando o modelo, seja durante a transcrição — o worker tenta **uma única vez** recarregar com `WHISPER_FALLBACK_COMPUTE_TYPE` antes de desistir. Nunca entra em loop de retentativa.
+
+**A segunda tentativa troca só a quantização, nunca o modelo.** Cair para um modelo menor que `large-v3` mudaria a qualidade da transcrição de um jeito que o usuário não pediu; uma quantização mais leve é uma degradação mais previsível e reversível — a próxima transcrição, com mais memória livre, volta a usar a configuração normal.
+
+Se a segunda tentativa também falhar, é uma falha como qualquer outra (§7): `status → transcription_failed`, erro registrado, áudio preservado (CT-18).
+
+## 10. Reprocessamento (RF-15, CT-20)
+
+`cronista reprocessar <id>` ([11-cli.md](11-cli.md) §2) devolve a reunião a `recorded`, tornando-a elegível ao worker de novo (`Meeting.is_transcribable()`, RN-06). Cobre os dois casos em que isso faz sentido:
+
+- **`transcription_failed`** — a tentativa anterior não deu certo (falta de memória, por exemplo); o áudio está intacto (§7), só falta pedir de novo.
+- **`transcribed` ou `summarized`** — a transcrição já teve sucesso, mas o usuário quer refazer (depois de ajustar `WHISPER_VOCABULARY`, por exemplo).
+
+Chamado numa reunião em qualquer outro estado (`registering`, `transcribing`, `summary_failed`), recusa com código de saída `5` ("operação incompatível com o estado da reunião", [11-cli.md](11-cli.md) §4) — não tem o que reprocessar ainda, ou já tem outra operação em andamento.
+
+**Reprocessar substitui os segmentos antigos, nunca acumula.** Antes de persistir os novos, o worker apaga todos os `segments` daquela `meeting_id`, na mesma transação que insere os novos — não há tentativa de casar segmento antigo com segmento novo por posição, porque a contagem e os limites dos segmentos mudam de uma transcrição pra outra (parâmetro de VAD diferente, vocabulário diferente, etc.). Trocar tudo de uma vez, dentro de uma transação, é o que evita um estado intermediário com segmentos de duas transcrições misturados.
+
+## 11. O que este documento não fixa
+
+Valores exatos de parâmetro do modelo: tamanho de janela, limiares de detecção de fala, número de candidatos. Esses se acertam medindo WER em áudio real, não decidindo antes ([14-plano-de-testes.md](14-plano-de-testes.md), CT-36).
+
+O que está fixado é o que muda a arquitetura: formato de captura, quantidade variável de trilhas, origem da atribuição de falante, a regra de que falha nunca destrói áudio, o mecanismo de fila sem broker, a recuperação de worker interrompido, e a substituição atômica de segmentos no reprocessamento.
