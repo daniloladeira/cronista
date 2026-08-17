@@ -9,6 +9,7 @@ from __future__ import annotations
 import ctypes
 import sys
 import threading
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -17,14 +18,23 @@ import numpy as np
 import soundcard as sc
 import soundfile as sf
 
+if sys.platform == "win32":
+    import msvcrt
+
 SAMPLE_RATE = 16_000  # o que o Whisper consome (docs/12-transcricao.md)
 CHANNELS = 1
 BLOCK_FRAMES = 1_600  # ~100ms por bloco: escrita incremental, RNF-P03
 SIGNAL_THRESHOLD = 0.01  # heurística inicial; ajustar com uso real
+PAUSE_KEY = b" "  # RF-31: "nome exato da tecla é detalhe de implementação" (docs/11-cli.md §3)
 
 LevelCallback = Callable[[str, float], None]
+PauseCallback = Callable[[bool], None]
 
 _COINIT_MULTITHREADED = 0x0
+
+
+class DeviceError(Exception):
+    """Dispositivo de áudio pedido por nome não existe, ou nenhum disponível."""
 
 
 def _ensure_com_initialized() -> None:
@@ -56,6 +66,31 @@ def list_output_devices() -> list[DeviceInfo]:
     return [DeviceInfo(s.name, s.name == default.name) for s in sc.all_speakers()]
 
 
+def get_input_device(name: str | None = None) -> object:
+    """UC-03 FA-02: nome ausente usa o padrão do sistema."""
+    if name is None:
+        try:
+            return sc.default_microphone()
+        except Exception as exc:  # noqa: BLE001 — soundcard não documenta a exceção exata
+            raise DeviceError("Nenhum microfone disponível.") from exc
+    try:
+        return sc.get_microphone(name)
+    except Exception as exc:  # noqa: BLE001
+        raise DeviceError(f"Dispositivo de entrada '{name}' não encontrado.") from exc
+
+
+def get_output_device(name: str | None = None) -> object:
+    if name is None:
+        try:
+            return sc.default_speaker()
+        except Exception as exc:  # noqa: BLE001
+            raise DeviceError("Nenhum dispositivo de saída disponível.") from exc
+    try:
+        return sc.get_speaker(name)
+    except Exception as exc:  # noqa: BLE001
+        raise DeviceError(f"Dispositivo de saída '{name}' não encontrado.") from exc
+
+
 @dataclass
 class TrackResult:
     speaker: str
@@ -81,6 +116,7 @@ class _TrackRecorder(threading.Thread):
         device: object,
         path: Path,
         stop_event: threading.Event,
+        pause_event: threading.Event,
         on_level: LevelCallback | None,
     ) -> None:
         super().__init__(daemon=True)
@@ -88,34 +124,58 @@ class _TrackRecorder(threading.Thread):
         self.device = device
         self.path = path
         self.stop_event = stop_event
+        self.pause_event = pause_event
         self.on_level = on_level
         self.had_signal = False
         self.error: str | None = None
         self._frames_written = 0
 
     def run(self) -> None:
+        # RN-11: pausar libera o dispositivo (sai do `with` do recorder e do
+        # SoundFile) em vez de só parar de escrever. Retomar reabre os dois
+        # e escreve nos MESMOS arquivos, em sequência (FA-03, FE-05) — por
+        # isso a reabertura usa 'r+' com seek pro fim, nunca 'w' de novo
+        # (que truncaria o que já foi gravado).
         _ensure_com_initialized()
+        first_open = True
         try:
-            with sf.SoundFile(
-                self.path,
-                mode="w",
-                samplerate=SAMPLE_RATE,
-                channels=CHANNELS,
-                subtype="PCM_16",
-            ) as wav:
-                with self.device.recorder(
-                    samplerate=SAMPLE_RATE, channels=CHANNELS
-                ) as rec:
-                    while not self.stop_event.is_set():
-                        block = rec.record(numframes=BLOCK_FRAMES)
-                        wav.write(block)
-                        self._frames_written += len(block)
-                        peak = float(np.abs(block).max()) if len(block) else 0.0
-                        if peak > SIGNAL_THRESHOLD:
-                            self.had_signal = True
-                        if self.on_level is not None:
-                            self.on_level(self.speaker, min(peak, 1.0))
-        except Exception as exc:  # noqa: BLE001 — UC-03 FE-02: dispositivo cai no meio
+            while not self.stop_event.is_set():
+                if self.pause_event.is_set():
+                    time.sleep(0.05)
+                    continue
+
+                # soundfile recusa samplerate/channels/subtype num arquivo já
+                # existente ('r+') — só valem na criação ('w'), senão levanta
+                # TypeError e a trilha morreria silenciosamente ao retomar.
+                if first_open:
+                    wav_ctx = sf.SoundFile(
+                        self.path,
+                        mode="w",
+                        samplerate=SAMPLE_RATE,
+                        channels=CHANNELS,
+                        subtype="PCM_16",
+                    )
+                else:
+                    wav_ctx = sf.SoundFile(self.path, mode="r+")
+                with wav_ctx as wav:
+                    if not first_open:
+                        wav.seek(0, sf.SEEK_END)
+                    first_open = False
+                    with self.device.recorder(
+                        samplerate=SAMPLE_RATE, channels=CHANNELS
+                    ) as rec:
+                        while not self.stop_event.is_set() and not self.pause_event.is_set():
+                            block = rec.record(numframes=BLOCK_FRAMES)
+                            wav.write(block)
+                            self._frames_written += len(block)
+                            peak = float(np.abs(block).max()) if len(block) else 0.0
+                            if peak > SIGNAL_THRESHOLD:
+                                self.had_signal = True
+                            if self.on_level is not None:
+                                self.on_level(self.speaker, min(peak, 1.0))
+        except Exception as exc:  # noqa: BLE001 — UC-03 FE-02/FE-05: dispositivo cai,
+            # ao gravar ou ao retomar de uma pausa. O que já foi escrito (fechado
+            # de forma limpa a cada pausa) continua válido; só esta trilha para.
             self.error = str(exc)
 
     @property
@@ -128,7 +188,9 @@ def record(
     mic_device: object | None = None,
     speaker_device: object | None = None,
     stop_event: threading.Event | None = None,
+    pause_event: threading.Event | None = None,
     on_level: LevelCallback | None = None,
+    on_pause_toggle: PauseCallback | None = None,
 ) -> RecordingResult:
     """Grava as duas trilhas até stop_event ser sinalizado, ou até Ctrl+C.
 
@@ -136,17 +198,21 @@ def record(
     acontece aqui. Se uma trilha falhar no meio (dispositivo removido), a
     outra continua (UC-03, FE-02). Ctrl+C é caminho de sucesso, não erro:
     a função retorna normalmente com o que foi gravado até então.
+
+    `PAUSE_KEY` alterna pause_event (RF-31) — lida aqui, não em cada
+    thread de trilha, pra ter um único ponto que fala com o terminal.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     stop_event = stop_event or threading.Event()
+    pause_event = pause_event or threading.Event()
 
     mic = mic_device or sc.default_microphone()
     speaker = speaker_device or sc.default_speaker()
     loopback = sc.get_microphone(speaker.name, include_loopback=True)
 
-    voce = _TrackRecorder("voce", mic, output_dir / "voce.wav", stop_event, on_level)
+    voce = _TrackRecorder("voce", mic, output_dir / "voce.wav", stop_event, pause_event, on_level)
     outros = _TrackRecorder(
-        "outros", loopback, output_dir / "outros.wav", stop_event, on_level
+        "outros", loopback, output_dir / "outros.wav", stop_event, pause_event, on_level
     )
 
     voce.start()
@@ -154,10 +220,20 @@ def record(
 
     try:
         # join() com timeout, em loop: um join() simples não é interrompido
-        # de forma confiável por Ctrl+C em todas as plataformas.
+        # de forma confiável por Ctrl+C em todas as plataformas. O mesmo
+        # intervalo serve pra checar a tecla de pausa sem thread à parte.
         while voce.is_alive() or outros.is_alive():
-            voce.join(timeout=0.2)
-            outros.join(timeout=0.2)
+            if sys.platform == "win32":
+                while msvcrt.kbhit():
+                    if msvcrt.getch() == PAUSE_KEY:
+                        if pause_event.is_set():
+                            pause_event.clear()
+                        else:
+                            pause_event.set()
+                        if on_pause_toggle is not None:
+                            on_pause_toggle(pause_event.is_set())
+            voce.join(timeout=0.1)
+            outros.join(timeout=0.1)
     except KeyboardInterrupt:
         stop_event.set()
         voce.join()

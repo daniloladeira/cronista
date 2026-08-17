@@ -1,6 +1,6 @@
 # Identidade Visual e Animação do CLI
 
-> **Versão:** 1.2 · **Última atualização:** 2026-08-17
+> **Versão:** 1.4 · **Última atualização:** 2026-08-17
 > Decisões de biblioteca: [ADR-0015](adr/0015-rich-como-apresentacao-cli.md) (Rich, comandos que rodam e terminam), [ADR-0016](adr/0016-textual-para-navegacao.md) (Textual, painel navegável de `list`/`ler`/`buscar`).
 > Este documento trata da parte em Rich — banner, indicador de sinal, spinners. O painel Textual ganha especificação visual própria quando a Fase 5 chegar.
 > **Este documento não introduz requisito novo.** Especifica como RF-05, RNF-U01, RNF-U02 e RNF-U03 se manifestam na tela. Se algum dia divergir de [11-cli.md](11-cli.md), aquele documento é quem define comportamento; este define aparência.
@@ -36,8 +36,8 @@ Ponto de partida: o artigo da engenharia por trás do banner animado do [GitHub 
 |---|---|---|
 | `cronista` sem comando, primeira execução do dia | Banner de abertura curto (poucos segundos) | Estético; segue a restrição do artigo de não aparecer a cada invocação |
 | Qualquer chamada de rede (`login`, `refresh`, envio de trilha, busca) | Indicador de status (`rich.status`) enquanto espera a resposta | RNF-U01, RNF-U03 — o usuário sabe que algo está acontecendo, e se foi rápido ou travou |
-| `cronista rec`, durante a gravação | **Traço fino embutido no cabeçalho**, um por trilha (`voce`, `outros`) — ver `signal_bar.py` `render_header_trace()` | É a implementação visual de **RF-05**, que já exigia indicação de sinal por trilha |
-| `cronista rec`, durante uma pausa (RF-31) | **Em aberto.** A barra congela? Muda de cor? Aparece texto "pausado"? Não decidido — adiado junto da implementação da etapa 5 | RF-31 |
+| `cronista rec`, durante a gravação | Tela em tela cheia (`Live(..., screen=True)`): régua "cronista" no topo, cabeçalho numa linha só (título à esquerda, **traço fino por trilha embutido à direita** — `voce`/`outros`, ver `signal_bar.py` `render_header_trace()`), rodapé com duração. **Sem barra grande separada** — o traço do cabeçalho é o único indicador, layout decidido em `scripts/preview_rec_screen.py` | É a implementação visual de **RF-05**, que já exigia indicação de sinal por trilha |
+| `cronista rec`, durante uma pausa (RF-31) | O traço de sinal, à direita do cabeçalho, vira o texto "pausado" (âmbar, sem emoji); a duração no rodapé para de contar (RN-11: tempo pausado não é gravação). Decidido com preview visual comparado com o usuário antes de implementar, não só descrito em texto | RF-31 |
 | Transcrição (Fase 3) | Barra de progresso | Ainda não implementado; registrado aqui para não ser esquecido quando a Fase 3 chegar |
 | Erro | Texto no papel `erro`, sem animação | RNF-U02 — mensagem de erro não é hora de efeito visual, é hora de clareza |
 
@@ -45,13 +45,14 @@ Ponto de partida: o artigo da engenharia por trás do banner animado do [GitHub 
 
 ## 4. Paleta
 
-Mais simples do que a primeira versão deste documento previa. Em vez de seis papéis semânticos com cor própria, o sistema tem **uma cor de identidade** e um neutro:
+Mais simples do que a primeira versão deste documento previa. Em vez de seis papéis semânticos com cor própria, o sistema tem **uma cor de identidade**, um neutro, e um terceiro papel que só aparece num estado específico:
 
 | Papel | Cor | Uso |
 |---|---|---|
 | **Principal** | `#DFB878` (dourado) | Cor de identidade do Cronista. Trilha `voce` no medidor de sinal; reservado para banner, títulos e destaques quando existirem |
 | **Neutro** | `#A6A6A6` (cinza, sem calor nenhum) | Trilha `outros`, e qualquer elemento que não deva competir com a cor principal |
 | **Apagado** | `#2A2A2A` | Estado "sem sinal" do medidor de LED — nunca preto puro, pra continuar visível como parte da escada |
+| **Pausado** | `#BA7517` (âmbar) | Único uso: `cronista rec` durante uma pausa (RF-31, §3). Não é um papel geral de "atenção" — é específico desse estado, pra não repetir o problema que a v1 deste documento teve com seis cores pouco usadas |
 
 **`erro`, `sucesso` e `atenção` ficam deliberadamente em aberto.** A primeira versão deste documento inventou uma paleta narrativa de seis cores (tema "manuscrito iluminado") sem o usuário ter pedido — corrigido depois que ele apontou que só havia dado uma cor, o dourado, como identidade principal. Fica registrado o erro para não repetir: **não inventar papel de cor que não foi pedido.** Esses três papéis são decididos quando o CLI realmente precisar deles (mensagem de erro, confirmação de sucesso), não antes.
 
@@ -76,6 +77,8 @@ Primitivas do Rich usadas, e por que cada uma:
 Como o medidor de sinal final usa só duas cores fixas (§4), não estados discretos gerados por interpolação, a degradação automática do Rich importa menos aqui do que importaria para um gradiente — mas segue sendo o que protege qualquer cor futura (banner, quando existir) sem exigir tratamento manual por terminal.
 
 ## 6. Medidor de LED: como funciona
+
+> **Superado.** A "versão final" abaixo (escada vertical de 10 células) foi consolidada no traço fino embutido no cabeçalho (§3) — não existe mais como bloco separado na tela. Fica registrado por ser o processo que levou até lá: as tentativas rejeitadas explicam por que o traço final é "pixelizado" e não um gradiente contínuo, mesmo em uma linha só.
 
 Duas tentativas antes desta, ambas testadas de verdade no terminal e descartadas por não agradar, não por limitação técnica — vale registrar o processo, não só o resultado:
 
