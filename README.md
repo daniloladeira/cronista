@@ -88,13 +88,27 @@ Duas merecem destaque por serem incomuns:
 
 ## Ambiente
 
-Windows 11, Python 3.13, GPU NVIDIA, Docker no WSL2, Ollama.
+Windows 11, Python 3.13, GPU NVIDIA, Docker Engine nativo no WSL2, Ollama.
 
 A captura de loopback foi verificada nesta máquina antes do planejamento — o script está em [`scripts/check_audio.py`](scripts/check_audio.py) e é o primeiro passo de qualquer instalação.
 
 ```bash
 python scripts/check_audio.py
 ```
+
+### Subir o ambiente
+
+**Por opção, nada sobe automaticamente no logon.** Abrir o terminal do WSL é o gesto que liga o ambiente:
+
+```bash
+wsl
+```
+
+A distro sobe, o systemd inicia o Docker e os containers voltam sozinhos (`restart: unless-stopped`). O `docker compose up -d` só é necessário na primeira vez.
+
+Para derrubar tudo: `wsl --shutdown`.
+
+**Esquecer de subir não custa uma reunião.** Gravar não depende de API, banco nem WSL — o áudio vai para o disco e o registro se completa depois, com `meet sync`. É exatamente o cenário que motivou o [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md): ninguém confere container antes de entrar numa reunião.
 
 ---
 
