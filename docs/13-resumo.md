@@ -5,7 +5,7 @@
 
 ## 1. Papel
 
-Transformar a transcrição — texto longo, cheio de hesitação e repetição — em um documento que responda o que ficou decidido e o que ficou pendente. É o entregável que o usuário efetivamente lê; a transcrição é matéria-prima.
+Transformar a transcrição, texto longo, cheio de hesitação e repetição, em um documento que responda o que ficou decidido e o que ficou pendente. É o entregável que o usuário efetivamente lê; a transcrição é matéria-prima.
 
 ## 2. Formato de saída
 
@@ -20,7 +20,7 @@ Markdown, com quatro seções fixas (RF-16):
 
 **Responsável na pendência é requisito, não estilo.** Um resumo que lista "revisar o contrato" sem dizer de quem é a tarefa não substitui a ata que ele pretende substituir. É também o critério mais objetivo da rubrica de avaliação ([14-plano-de-testes.md](14-plano-de-testes.md)).
 
-Seção sem conteúdo aparece vazia e explícita, nunca omitida — o leitor precisa distinguir "não houve decisão" de "o modelo esqueceu de listar".
+Seção sem conteúdo aparece vazia e explícita, nunca omitida: o leitor precisa distinguir "não houve decisão" de "o modelo esqueceu de listar".
 
 ## 3. Provedores
 
@@ -39,9 +39,9 @@ Trocar de provedor não altera código fora desta camada (RNF-S04).
 
 A camada usa **LangChain**, com as integrações de cada provedor.
 
-> **Registro honesto:** esta escolha foi recomendada contra durante o planejamento — uma chamada única não costuma justificar um framework de orquestração, e há risco de conflito de dependência com o motor de transcrição. O usuário decidiu adotá-la deliberadamente, para aprender o framework em um ponto de baixo risco do sistema. O raciocínio completo, com o gatilho de reversão, está no [ADR-0005](adr/0005-langchain-na-camada-de-resumo.md). Este documento segue a decisão sem reabri-la.
+> **Registro honesto:** esta escolha foi recomendada contra durante o planejamento. Uma chamada única não costuma justificar um framework de orquestração, e há risco de conflito de dependência com o motor de transcrição. O usuário decidiu adotá-la deliberadamente, para aprender o framework em um ponto de baixo risco do sistema. O raciocínio completo, com o gatilho de reversão, está no [ADR-0005](adr/0005-langchain-na-camada-de-resumo.md). Este documento segue a decisão sem reabri-la.
 
-Consequência prática já prevista: se as dependências conflitarem com `ctranslate2`, o worker de transcrição ganha ambiente próprio — o que a arquitetura de processos separados já deixa barato ([07-arquitetura.md](07-arquitetura.md) §7).
+Consequência prática já prevista: se as dependências conflitarem com `ctranslate2`, o worker de transcrição ganha ambiente próprio, o que a arquitetura de processos separados já deixa barato ([07-arquitetura.md](07-arquitetura.md) §7).
 
 ## 5. Transcrições longas
 
@@ -66,7 +66,7 @@ O limiar exato e o tamanho de bloco dependem do modelo escolhido, e ficam em con
 
 Cada resumo persiste o provedor, o modelo e a **versão do prompt** que o gerou ([08-modelo-de-dados.md](08-modelo-de-dados.md) §4.4).
 
-Isso existe para tornar a melhoria mensurável. Alterar o prompt e não registrar qual gerou o quê torna impossível saber se a mudança melhorou ou piorou — e "o resumo ficou melhor que o do Notion" é o critério de sucesso do projeto, não uma impressão.
+Isso existe para tornar a melhoria mensurável. Alterar o prompt e não registrar qual gerou o quê torna impossível saber se a mudança melhorou ou piorou, e "o resumo ficou melhor que o do Notion" é o critério de sucesso do projeto, não uma impressão.
 
 Resumos nunca são sobrescritos (RN-03). Gerar de novo acrescenta; a comparação lado a lado é o objetivo.
 
@@ -83,6 +83,6 @@ O princípio: **nunca persistir resumo malformado como se fosse válido.** Um re
 
 ## 8. O que este documento não fixa
 
-O texto dos prompts, o modelo do Ollama, valores de temperatura, tamanho de bloco e limiar de divisão. Todos dependem de medição em português real — decidi-los agora seria adivinhação registrada como especificação.
+O texto dos prompts, o modelo do Ollama, valores de temperatura, tamanho de bloco e limiar de divisão. Todos dependem de medição em português real: decidi-los agora seria adivinhação registrada como especificação.
 
 O que está fixado: o formato de saída, a exigência de responsável nas pendências, a proibição de truncar, o versionamento que torna a comparação possível, e a regra de nunca gravar resumo malformado.

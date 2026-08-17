@@ -9,7 +9,7 @@ Três regras governam o desenho. Todas derivam de requisitos, não de preferênc
 
 **1. A API é o centro do estado.** Registro de reuniões, transcrições, resumos, busca e consulta passam pela API. Cliente e futura interface desktop são consumidores HTTP, não donos de dados.
 
-**2. A gravação é a exceção deliberada à regra 1.** Áudio de reunião não se regrava — é a única falha irreversível do sistema (RNF-R01). Por isso a captura escreve em disco local antes de qualquer chamada de rede e **nunca** depende da API para iniciar ou continuar. O registro é posterior e reconciliável.
+**2. A gravação é a exceção deliberada à regra 1.** Áudio de reunião não se regrava: é a única falha irreversível do sistema (RNF-R01). Por isso a captura escreve em disco local antes de qualquer chamada de rede e **nunca** depende da API para iniciar ou continuar. O registro é posterior e reconciliável.
 
 **3. Processos separados por recurso disputado.** O worker de transcrição mantém o modelo carregado em memória de vídeo e satura GPU e CPU. Rodá-lo dentro da API violaria RNF-P04 (máquina utilizável durante a gravação) e tornaria a API refém do ciclo de vida do modelo.
 
@@ -127,7 +127,7 @@ flowchart TB
 
 **A seta tracejada para o disco é o único ponto lento do desenho.** O acervo fica no Windows e o container o lê atravessando o compartilhamento 9P entre a máquina virtual e o hospedeiro. Isso custa segundos por trilha, e é aceito de propósito: guardar o áudio dentro do WSL apenas transferiria a lentidão para a **escrita**, que é a operação irreversível.
 
-**Ponto de atenção de VRAM — é a restrição que governa o desenho.** A GPU tem 8 GB, mas o desktop do Windows já consome ~1,5 a 2 GB (medido), deixando **~6,3 GB de fato disponíveis**. Whisper (4 a 5 GB) e o modelo de linguagem (5 a 6 GB) não cabem simultaneamente, e o Whisper sozinho já ocupa a maior parte do que sobra. **Transcrever e resumir são operações mutuamente exclusivas nesta máquina.**
+**Ponto de atenção de VRAM: é a restrição que governa o desenho.** A GPU tem 8 GB, mas o desktop do Windows já consome ~1,5 a 2 GB (medido), deixando **~6,3 GB de fato disponíveis**. Whisper (4 a 5 GB) e o modelo de linguagem (5 a 6 GB) não cabem simultaneamente, e o Whisper sozinho já ocupa a maior parte do que sobra. **Transcrever e resumir são operações mutuamente exclusivas nesta máquina.**
 
 Duas consequências, ambas obrigatórias:
 
@@ -138,7 +138,7 @@ Configuração e limites em [12-transcricao.md](12-transcricao.md).
 
 ## 4. Fluxos
 
-### 4.1 Gravação — incluindo o caminho de falha
+### 4.1 Gravação, incluindo o caminho de falha
 
 O fluxo mais importante do sistema. O ramo `else` é o que materializa RNF-R01.
 
@@ -157,7 +157,7 @@ sequenceDiagram
     end
     U->>C: encerrar
     C->>D: fecha os WAV
-    Note over C,D: áudio íntegro em disco — RN-08
+    Note over C,D: áudio íntegro em disco, RN-08
 
     C->>A: registrar reunião
     alt API disponível
@@ -175,7 +175,7 @@ sequenceDiagram
     end
 ```
 
-### 4.2 Transcrição — o banco como fila
+### 4.2 Transcrição, o banco como fila
 
 Não há Celery, Redis nem broker. O estado da reunião *é* a fila, e o PostgreSQL fornece o travamento necessário.
 
@@ -245,13 +245,13 @@ Consequência direta do princípio 2. Esta tabela é o contrato de degradação 
 
 ¹ O worker fala direto com o banco, não com a API.
 
-**Leitura da tabela:** a única linha em negrito é a que não pode falhar. Todas as demais operações são repetíveis — se falharem, tenta-se de novo sem perda.
+**Leitura da tabela:** a única linha em negrito é a que não pode falhar. Todas as demais operações são repetíveis: se falharem, tenta-se de novo sem perda.
 
 ## 6. Segurança
 
 | Aspecto | Decisão |
 |---|---|
-| Exposição | A API não vai para a internet aberta. Rede privada (Tailscale) ou LAN — ver [10-autenticacao.md](10-autenticacao.md) |
+| Exposição | A API não vai para a internet aberta. Rede privada (Tailscale) ou LAN, ver [10-autenticacao.md](10-autenticacao.md) |
 | Autenticação | JWT, usuário único, credencial em variável de ambiente com hash Argon2 |
 | Dados em repouso | Sem criptografia adicional. O disco é do usuário e a superfície é local |
 | Áudio | Nunca transita para serviço de terceiro no caminho padrão (RNF-C01) |

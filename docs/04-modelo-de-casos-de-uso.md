@@ -16,7 +16,7 @@
 
 Duas decisões de modelagem que merecem justificativa, já que ambas admitem alternativa:
 
-**O motor de transcrição não é ator.** Ele executa como biblioteca dentro do processo do worker, que é parte do sistema. Modelá-lo como ator externo sugeriria uma fronteira que não existe. O **Provedor de LLM**, ao contrário, é processo separado com interface de rede — este é externo de fato.
+**O motor de transcrição não é ator.** Ele executa como biblioteca dentro do processo do worker, que é parte do sistema. Modelá-lo como ator externo sugeriria uma fronteira que não existe. O **Provedor de LLM**, ao contrário, é processo separado com interface de rede: este é externo de fato.
 
 **O Agendador é ator, e não "o sistema chamando a si mesmo".** Transcrição, reconciliação e retenção não são iniciadas pelo Usuário: acontecem por decorrência de tempo ou de estado. Sem um ator que represente esse disparo, esses casos de uso ficariam sem iniciador, ou seriam incorretamente atribuídos ao Usuário.
 
@@ -33,20 +33,20 @@ Duas decisões de modelagem que merecem justificativa, já que ambas admitem alt
 | **UC-07** | Consultar reunião | Usuário | RF-20, RF-21, RF-22 |
 | **UC-08** | Buscar em reuniões | Usuário | RF-23, RF-24 |
 | **UC-09** | Aplicar retenção e excluir reunião | Agendador, Usuário | RF-29, RF-30 |
-| **UC-10** | Enviar trilha de áudio | — (incluído) | RF-06, RF-07 |
+| **UC-10** | Enviar trilha de áudio | n/d (incluído) | RF-06, RF-07 |
 | **UC-11** | Reconciliar reuniões pendentes | Agendador | RF-08 |
 
 ### 2.1 Dois casos de uso que não estavam previstos
 
-O planejamento inicial identificou nove casos de uso. Ao detalhar os fluxos, dois comportamentos ficaram sem dono — o que é exatamente o que o detalhamento serve para revelar:
+O planejamento inicial identificou nove casos de uso. Ao detalhar os fluxos, dois comportamentos ficaram sem dono, o que é exatamente o que o detalhamento serve para revelar:
 
-**UC-10 · Enviar trilha de áudio** — gravação ao vivo e importação de arquivo terminam no mesmo ponto: uma trilha de áudio precisa ser registrada e associada a uma reunião. Deixar isso duplicado em UC-03 e UC-04 esconderia que os dois caminhos convergem, que é justamente o que faz a importação ser barata de implementar.
+**UC-10 · Enviar trilha de áudio.** Gravação ao vivo e importação de arquivo terminam no mesmo ponto: uma trilha de áudio precisa ser registrada e associada a uma reunião. Deixar isso duplicado em UC-03 e UC-04 esconderia que os dois caminhos convergem, que é justamente o que faz a importação ser barata de implementar.
 
-**UC-11 · Reconciliar reuniões pendentes** — RF-08 exige reenviar registros que falharam, e RNF-R01 exige que nenhuma reunião se perca. Nenhum caso de uso da lista original cobria isso. Sem UC-11, o requisito mais forte do sistema ficaria sem comportamento correspondente.
+**UC-11 · Reconciliar reuniões pendentes.** RF-08 exige reenviar registros que falharam, e RNF-R01 exige que nenhuma reunião se perca. Nenhum caso de uso da lista original cobria isso. Sem UC-11, o requisito mais forte do sistema ficaria sem comportamento correspondente.
 
 ## 3. Diagrama de casos de uso
 
-> **Nota de notação.** O Mermaid não possui diagrama de casos de uso nativo — não há notação de ator em boneco nem de caso de uso em elipse. O diagrama abaixo é uma **aproximação declarada**: atores como retângulos à esquerda, casos de uso como formas arredondadas dentro da fronteira do sistema, associações como linhas sem seta e as relações «include» e «extend» como setas tracejadas rotuladas. A escolha por Mermaid foi deliberada — ver [adr/0013-mermaid-para-diagramas.md](adr/0013-mermaid-para-diagramas.md).
+> **Nota de notação.** O Mermaid não possui diagrama de casos de uso nativo: não há notação de ator em boneco nem de caso de uso em elipse. O diagrama abaixo é uma **aproximação declarada**: atores como retângulos à esquerda, casos de uso como formas arredondadas dentro da fronteira do sistema, associações como linhas sem seta e as relações «include» e «extend» como setas tracejadas rotuladas. A escolha por Mermaid foi deliberada, ver [adr/0013-mermaid-para-diagramas.md](adr/0013-mermaid-para-diagramas.md).
 
 ```mermaid
 flowchart LR
