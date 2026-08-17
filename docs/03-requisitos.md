@@ -5,8 +5,8 @@
 
 ## Como ler
 
-- **RF-nn** — requisito funcional: o que o sistema faz.
-- **RNF-nn** — requisito não-funcional, classificado por **FURPS+**: com que qualidade ele faz.
+- **RF-nn**: requisito funcional, o que o sistema faz.
+- **RNF-nn**: requisito não-funcional, classificado por **FURPS+**, com que qualidade ele faz.
 - A coluna **Recurso** liga cada requisito ao recurso de produto (RP) que o originou.
 - A coluna **Prioridade** usa: *Essencial* (sem ele não há produto), *Importante*, *Desejável*.
 
@@ -48,7 +48,7 @@ Requisito não descreve solução. Onde uma solução específica é obrigatóri
 | **RF-14** | Descartar trechos sem fala antes de transcrever | RP-03 | Importante |
 | **RF-15** | Permitir reprocessar a transcrição de uma reunião já transcrita | RP-03 | Desejável |
 
-> **RF-13 é onde o projeto se diferencia.** As ferramentas de mercado transcrevem português genérico. Vocabulário de domínio é o que faz um nome próprio como "Vitalmed" sair escrito assim, e não como "vital med" ou "vitaumedi" — e o mesmo vale para nomes de medicamentos, que viram ruído fonético sem contexto.
+> **RF-13 é onde o projeto se diferencia.** As ferramentas de mercado transcrevem português genérico. Vocabulário de domínio é o que faz um nome próprio como "Vitalmed" sair escrito assim, e não como "vital med" ou "vitaumedi", e o mesmo vale para nomes de medicamentos, que viram ruído fonético sem contexto.
 
 ### 1.4 Resumo
 
@@ -59,7 +59,7 @@ Requisito não descreve solução. Onde uma solução específica é obrigatóri
 | **RF-18** | Permitir escolher o provedor de modelo de linguagem por execução | RP-04 | Importante |
 | **RF-19** | Preservar todos os resumos gerados para uma reunião, sem sobrescrever, registrando provedor e instante | RP-04 | Importante |
 
-> **RF-19 existe para permitir comparação.** Trocar de modelo ou de prompt e perder o resultado anterior impede saber se houve melhora — e medir isso é o critério de sucesso do projeto.
+> **RF-19 existe para permitir comparação.** Trocar de modelo ou de prompt e perder o resultado anterior impede saber se houve melhora, e medir isso é o critério de sucesso do projeto.
 
 ### 1.5 Consulta
 
@@ -96,7 +96,7 @@ Requisito não descreve solução. Onde uma solução específica é obrigatóri
 | ID | Requisito | Verificação |
 |---|---|---|
 | **RNF-U01** | Iniciar uma gravação exige um único comando, sem parâmetros obrigatórios | Manual |
-| **RNF-U02** | Mensagens de erro em português, indicando a ação corretiva — não apenas a falha | Revisão |
+| **RNF-U02** | Mensagens de erro em português, indicando a ação corretiva, não apenas a falha | Revisão |
 | **RNF-U03** | O usuário consegue distinguir, na saída de erro, falha da própria máquina de falha de serviço externo | Revisão |
 
 ### 2.2 Confiabilidade
@@ -140,9 +140,9 @@ Herdadas de [01-documento-de-visao.md](01-documento-de-visao.md) §6, com a deci
 | **RNF-C02** | Executa em Windows 11 | Física | 0001 |
 | **RNF-C03** | A transcrição usa GPU local | Implementação | 0002 |
 | **RNF-C04** | Custo recorrente zero na configuração padrão | Negócio | 0002, 0005 |
-| **RNF-C05** | Interface e resumos em português brasileiro | Interface | — |
+| **RNF-C05** | Interface e resumos em português brasileiro | Interface | n/d |
 | **RNF-C06** | A API não é exposta à internet aberta | Segurança | 0011 |
-| **RNF-C07** | O sistema não obtém nem verifica consentimento de gravação dos participantes; a responsabilidade é do usuário | Legal | — |
+| **RNF-C07** | O sistema não obtém nem verifica consentimento de gravação dos participantes; a responsabilidade é do usuário | Legal | n/d |
 
 ---
 
@@ -155,6 +155,6 @@ Registrados para que não retornem como suposição implícita.
 | Múltiplos usuários, cadastro, recuperação de senha | Visão §8, ADR-0011 |
 | Bot participante da chamada | Visão §8 |
 | Transcrição exibida em tempo real durante a reunião | Visão §8 |
-| Identificação nominal de cada participante na trilha `outros` | ADR-0001 — a trilha distingue "usuário × demais", não pessoa por pessoa |
+| Identificação nominal de cada participante na trilha `outros` | ADR-0001, a trilha distingue "usuário × demais", não pessoa por pessoa |
 | Tradução entre idiomas | Visão §8 |
 | Aplicativo móvel | Visão §8 |

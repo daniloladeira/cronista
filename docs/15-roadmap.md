@@ -4,7 +4,7 @@
 
 ## 1. Ordem e critério
 
-Nove fases. Cada uma entrega algo utilizável e só está concluída quando seus casos de teste passam — **inclusive os de exceção** ([14-plano-de-testes.md](14-plano-de-testes.md) §8).
+Nove fases. Cada uma entrega algo utilizável e só está concluída quando seus casos de teste passam, **inclusive os de exceção** ([14-plano-de-testes.md](14-plano-de-testes.md) §8).
 
 | Fase | Entrega | Casos de uso | Testes |
 |---|---|---|---|
@@ -15,8 +15,8 @@ Nove fases. Cada uma entrega algo utilizável e só está concluída quando seus
 | 5 | Consulta e busca | UC-07, UC-08 | CT-25 a CT-29 |
 | 6 | Importação de arquivo | UC-04 | CT-12 a CT-15 |
 | 7 | Retenção e exclusão | UC-09 | CT-30 a CT-32 |
-| 8 | Interface desktop | — | — |
-| 9 | Leitura remota | — | — |
+| 8 | Interface desktop | n/d | n/d |
+| 9 | Leitura remota | n/d | n/d |
 
 ## 2. Detalhamento
 
@@ -32,7 +32,7 @@ PostgreSQL em container, migração inicial com as quatro tabelas, FastAPI no ar
 
 O coração do sistema. Captura WASAPI em duas trilhas, escrita incremental em disco, registro na API, índice local de pendências e reconciliação.
 
-**Pronto quando:** uma reunião real é gravada em dois WAV corretos, aparece no banco, e **CT-08 passa** — a API derrubada no meio da gravação não custa o áudio.
+**Pronto quando:** uma reunião real é gravada em dois WAV corretos, aparece no banco, e **CT-08 passa**: a API derrubada no meio da gravação não custa o áudio.
 
 **Risco já eliminado:** a captura de loopback foi verificada nesta máquina antes do planejamento. A biblioteca enxerga a saída padrão e gravou 1 segundo real a 16 kHz mono.
 
@@ -42,9 +42,9 @@ Worker em processo separado, consumindo a fila do banco. Detecção de fala, tra
 
 **Pronto quando:** uma reunião de 1 hora é transcrita em menos de 1 hora, com falantes corretos, e a linha de base de WER está medida.
 
-**Pré-requisito de ambiente: resolvido em 2026-08-17.** NVIDIA Container Toolkit 1.20.0 instalado no WSL e verificado — `docker run --rm --gpus all ubuntu nvidia-smi` enxerga a RTX 4060 de dentro do container.
+**Pré-requisito de ambiente: resolvido em 2026-08-17.** NVIDIA Container Toolkit 1.20.0 instalado no WSL e verificado: `docker run --rm --gpus all ubuntu nvidia-smi` enxerga a RTX 4060 de dentro do container.
 
-**Restrição medida na mesma verificação:** o desktop do Windows consome ~1,5 a 2 GB de VRAM, deixando ~6,3 GB reais dos 8 GB nominais. O Whisper cabe com pouca folga — ver [ADR-0014](adr/0014-worker-em-container-com-gpu.md).
+**Restrição medida na mesma verificação:** o desktop do Windows consome ~1,5 a 2 GB de VRAM, deixando ~6,3 GB reais dos 8 GB nominais. O Whisper cabe com pouca folga, ver [ADR-0014](adr/0014-worker-em-container-com-gpu.md).
 
 **O maior risco do projeto foi endereçado antes da implementação.** `ctranslate2` com CUDA convivendo com as dependências de LangChain deixou de ser problema com o worker em container ([ADR-0014](adr/0014-worker-em-container-com-gpu.md)): as bibliotecas de CUDA ficam na imagem e o ambiente da API nunca as vê.
 

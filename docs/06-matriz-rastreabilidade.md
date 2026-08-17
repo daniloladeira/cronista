@@ -73,7 +73,7 @@ Nenhum recurso sem requisito. Nenhum requisito funcional órfão de recurso.
 
 | RNF | Como se verifica | Caso de teste | Fase |
 |---|---|---|---|
-| RNF-U01 Um comando para gravar | Inspeção da interface | — | 2 |
+| RNF-U01 Um comando para gravar | Inspeção da interface | n/d | 2 |
 | RNF-U02 Erro em português e acionável | Revisão das mensagens | CT-15, CT-23 | 2+ |
 | RNF-U03 Distinguir falha local de externa | Revisão das mensagens | CT-04, CT-23 | 2+ |
 | **RNF-R01 Nenhuma reunião perdida** | **Injeção de falha** | **CT-08, CT-33, CT-34** | **2** |
@@ -83,13 +83,13 @@ Nenhum recurso sem requisito. Nenhum requisito funcional órfão de recurso.
 | RNF-P01 Mais rápido que tempo real | Medição em reunião de 1h | CT-16 | 3 |
 | RNF-P02 Busca sob 1 segundo | Medição | CT-28 | 5 |
 | RNF-P03 Captura não perde amostra | Inspeção do áudio | CT-07 | 2 |
-| RNF-P04 Máquina utilizável durante gravação | Observação manual | — | 2 |
+| RNF-P04 Máquina utilizável durante gravação | Observação manual | n/d | 2 |
 | RNF-S01 Decisões em ADR | Revisão | seção 5 | 1 |
 | RNF-S02 Migração versionada | Execução da migração | CT-39 | 1 |
-| RNF-S03 Log suficiente para diagnóstico | Revisão | — | 3 |
+| RNF-S03 Log suficiente para diagnóstico | Revisão | n/d | 3 |
 | RNF-S04 Trocar provedor sem tocar fora da camada | Revisão de código | CT-37 | 4 |
-| RNF-C01 Nada sai da máquina no padrão | Inspeção de tráfego | — | 4 |
-| RNF-C02 a RNF-C07 | Restrições — verificadas por revisão | — | — |
+| RNF-C01 Nada sai da máquina no padrão | Inspeção de tráfego | n/d | 4 |
+| RNF-C02 a RNF-C07 | Restrições, verificadas por revisão | n/d | n/d |
 
 ---
 
@@ -140,7 +140,7 @@ Os fluxos de exceção são a parte da especificação com maior chance de virar
 | API como centro do sistema | [0010](adr/0010-api-como-centro.md) | RP-07 |
 | JWT com usuário único | [0011](adr/0011-jwt-usuario-unico.md) | RF-25 a RF-28, RNF-C06 |
 | **Gravação em disco antes da API** | [0012](adr/0012-gravacao-em-disco-antes-da-api.md) | **RNF-R01, RNF-R02** |
-| Mermaid para todos os diagramas | [0013](adr/0013-mermaid-para-diagramas.md) | — (decisão de documentação) |
+| Mermaid para todos os diagramas | [0013](adr/0013-mermaid-para-diagramas.md) | n/d (decisão de documentação) |
 | Worker de transcrição em container com GPU | [0014](adr/0014-worker-em-container-com-gpu.md) | RNF-C03, RNF-P01, RNF-P04 |
 
 ---

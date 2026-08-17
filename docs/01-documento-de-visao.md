@@ -13,7 +13,7 @@ Decisões técnicas **não** pertencem a este documento. Elas estão nos ADRs ([
 
 ### 1.2 Escopo
 
-Um sistema pessoal que grava reuniões realizadas no computador, transcreve o áudio localmente e gera resumos estruturados — sem enviar áudio para serviços de terceiros e sem limite de uso.
+Um sistema pessoal que grava reuniões realizadas no computador, transcreve o áudio localmente e gera resumos estruturados, sem enviar áudio para serviços de terceiros e sem limite de uso.
 
 ## 2. Posicionamento
 
@@ -26,7 +26,7 @@ Um sistema pessoal que grava reuniões realizadas no computador, transcreve o á
 | **cujo impacto é** | perder decisões e pendências combinadas em reunião, ou pagar recorrência por um recurso que a própria máquina tem capacidade de executar |
 | **uma boa solução seria** | gravar e transcrever localmente, sem cota, com resumo de qualidade em português |
 
-O gatilho concreto: o Notion AI, usado até então, tem limite de uso e o limite foi atingido. As alternativas de mercado caem em dois grupos — as que cobram mensalidade (Fathom Premium, ~US$20/mês) e as que oferecem plano gratuito com o recurso principal capado. Todas, sem exceção, enviam o áudio da reunião para a nuvem do fornecedor.
+O gatilho concreto: o Notion AI, usado até então, tem limite de uso e o limite foi atingido. As alternativas de mercado caem em dois grupos: as que cobram mensalidade (Fathom Premium, ~US$20/mês) e as que oferecem plano gratuito com o recurso principal capado. Todas, sem exceção, enviam o áudio da reunião para a nuvem do fornecedor.
 
 ### 2.2 Sentença de posição do produto
 
@@ -43,11 +43,11 @@ A decisão de construir foi tomada com conhecimento do que já existe. Este regi
 
 | Alternativa | Por que não substitui |
 |---|---|
-| Notion AI | Limite de uso — o gatilho original do projeto |
+| Notion AI | Limite de uso, o gatilho original do projeto |
 | Fathom (grátis) | Gravação ilimitada, mas recurso de resumo capado; áudio na nuvem |
 | Fathom Premium | ~US$20/mês recorrente |
 | Granola | Somente macOS |
-| Meetily, Hyprnote | Open-source, locais, resolvem quase tudo. **Não foram descartados por deficiência técnica** — o usuário optou por construir. A diferenciação buscada é qualidade em pt-BR com vocabulário de domínio |
+| Meetily, Hyprnote | Open-source, locais, resolvem quase tudo. **Não foram descartados por deficiência técnica**: o usuário optou por construir. A diferenciação buscada é qualidade em pt-BR com vocabulário de domínio |
 
 ## 3. Stakeholders e usuários
 
@@ -63,7 +63,7 @@ Sistema de usuário único. Não há papéis distintos, e essa é uma decisão c
 
 ### 4.1 Perspectiva
 
-O sistema opera sozinho. Não depende de integração com plataforma de reunião — não entra na chamada, não usa API do Google Meet, Zoom ou Teams, e por isso funciona com qualquer uma delas, inclusive as que não têm API.
+O sistema opera sozinho. Não depende de integração com plataforma de reunião: não entra na chamada, não usa API do Google Meet, Zoom ou Teams, e por isso funciona com qualquer uma delas, inclusive as que não têm API.
 
 Depende de três recursos da máquina do usuário: dispositivo de áudio com captura de loopback, GPU para transcrição e um provedor de modelo de linguagem para o resumo.
 
@@ -71,7 +71,7 @@ Depende de três recursos da máquina do usuário: dispositivo de áudio com cap
 
 - O sistema operacional expõe o áudio de saída para captura (loopback). Verificado nesta máquina.
 - A GPU tem memória suficiente para o modelo de transcrição escolhido.
-- Há um provedor de LLM disponível — local por padrão.
+- Há um provedor de LLM disponível, local por padrão.
 - O usuário aceita gravar a reunião. **Consentimento dos demais participantes é responsabilidade do usuário**, não do sistema; ver seção 6.
 
 ## 5. Recursos do produto
@@ -105,7 +105,7 @@ Recursos de alto nível. O detalhamento vira requisito em [03-requisitos.md](03-
 | RE-02 | Transcrição roda em GPU local, sem serviço externo no caminho padrão | Privacidade e custo |
 | RE-03 | Custo recorrente zero na configuração padrão | Motivação do projeto |
 | RE-04 | Interface e resumos em português brasileiro | Ambiente do usuário |
-| RE-05 | A API não é exposta à internet aberta | Postura de segurança — ver [10-autenticacao.md](10-autenticacao.md) |
+| RE-05 | A API não é exposta à internet aberta | Postura de segurança, ver [10-autenticacao.md](10-autenticacao.md) |
 | RE-06 | Gravar terceiros pode exigir consentimento conforme a legislação e a política da organização. O sistema **não** verifica nem obtém consentimento; a responsabilidade é do usuário | Legal |
 
 ## 7. Faixas de qualidade
@@ -120,7 +120,7 @@ Metas mensuráveis. Como medir está em [14-plano-de-testes.md](14-plano-de-test
 | Qualidade do resumo | Igual ou superior ao Notion AI na mesma reunião, por rubrica manual |
 | Usabilidade | Iniciar uma gravação em um comando |
 
-**Sobre a meta de confiabilidade:** ela é a mais forte do documento e tem consequência de arquitetura. Áudio de reunião não se regrava — é a única falha irreversível do sistema. Isso é o que sustenta [adr/0012-gravacao-em-disco-antes-da-api.md](adr/0012-gravacao-em-disco-antes-da-api.md).
+**Sobre a meta de confiabilidade:** ela é a mais forte do documento e tem consequência de arquitetura. Áudio de reunião não se regrava: é a única falha irreversível do sistema. Isso é o que sustenta [adr/0012-gravacao-em-disco-antes-da-api.md](adr/0012-gravacao-em-disco-antes-da-api.md).
 
 ## 8. Não-objetivos
 
@@ -130,7 +130,7 @@ Escopo tem valor pelo que exclui. Nenhum destes é impossível; todos foram cons
 |---|---|
 | Multiusuário e cadastro aberto | Uso pessoal. Autenticação existe para proteger acesso remoto, não para separar usuários |
 | Bot que entra na reunião | Frágil a mudança de interface das plataformas, e visível aos participantes |
-| Transcrição em tempo real durante a reunião | Complexidade alta e valor baixo — o resumo é consumido depois |
+| Transcrição em tempo real durante a reunião | Complexidade alta e valor baixo, o resumo é consumido depois |
 | Aplicativo móvel | O áudio está no computador |
 | Integração com CRM, calendário ou Slack | Escopo de produto comercial, não de ferramenta pessoal |
 | Tradução entre idiomas | O uso é monolíngue |
