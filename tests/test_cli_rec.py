@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from cronista.client import capture, cli, registration
+from cronista.client import capture, cli, reconciliation, registration
 from cronista.client.capture import DeviceInfo, RecordingResult, TrackResult
 
 runner = CliRunner()
@@ -43,6 +43,51 @@ def test_rec_com_sucesso_registra_e_informa_id(monkeypatch, tmp_path):
 
     assert result.exit_code == 0
     assert "Reunião registrada" in result.stdout
+
+
+def test_rec_com_sucesso_tambem_reconcilia_outras_pendencias(monkeypatch, tmp_path):
+    # docs/11-cli.md §3: reconciliação automática acontece DEPOIS de gravar
+    # (RN-08), e só quando a própria reunião confirmou com a API.
+    monkeypatch.setattr(cli._settings, "data_root", str(tmp_path))
+    _stub_devices(monkeypatch)
+    monkeypatch.setattr(
+        capture, "record", lambda *a, **k: RecordingResult(tracks=_tracks_ok(tmp_path))
+    )
+    monkeypatch.setattr(registration, "register", lambda meeting, tracks, data_root: "recorded")
+    monkeypatch.setattr(
+        reconciliation,
+        "reconcile",
+        lambda data_root: {"reconciliadas": 3, "ainda_pendentes": 0, "inconsistentes": 0},
+    )
+
+    result = runner.invoke(cli.app, ["rec"])
+
+    assert result.exit_code == 0
+    assert "3" in result.stdout
+
+
+def test_rec_com_api_fora_nao_tenta_reconciliar(monkeypatch, tmp_path):
+    monkeypatch.setattr(cli._settings, "data_root", str(tmp_path))
+    _stub_devices(monkeypatch)
+    monkeypatch.setattr(
+        capture, "record", lambda *a, **k: RecordingResult(tracks=_tracks_ok(tmp_path))
+    )
+    monkeypatch.setattr(
+        registration, "register", lambda meeting, tracks, data_root: "pendente_envio"
+    )
+
+    chamou = False
+
+    def _reconcile(data_root):
+        nonlocal chamou
+        chamou = True
+        return {"reconciliadas": 0, "ainda_pendentes": 0, "inconsistentes": 0}
+
+    monkeypatch.setattr(reconciliation, "reconcile", _reconcile)
+
+    runner.invoke(cli.app, ["rec"])
+
+    assert not chamou  # API já sabidamente fora, não vale a pena tentar de novo
 
 
 def test_rec_com_api_fora_avisa_pendencia_sem_falhar(monkeypatch, tmp_path):

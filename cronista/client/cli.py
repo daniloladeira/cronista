@@ -11,7 +11,16 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from cronista.client import api_client, capture, naming, registration, signal_bar, token_store
+from cronista.client import (
+    api_client,
+    capture,
+    naming,
+    reconciliation,
+    registration,
+    signal_bar,
+    token_store,
+)
+from cronista.client.reconciliation import ReconcileResult
 from cronista.core.config import RECORDINGS_DIRNAME, ClientSettings
 from cronista.core.ids import uuid7
 
@@ -42,6 +51,28 @@ def login(
 
     token_store.save_tokens(tokens["access_token"], tokens["refresh_token"])
     typer.echo("Login realizado. Token salvo.")
+
+
+def _report_reconciliation(resultado: ReconcileResult) -> None:
+    if resultado["reconciliadas"]:
+        typer.echo(f"{resultado['reconciliadas']} reunião(ões) pendente(s) reconciliada(s).")
+    if resultado["ainda_pendentes"]:
+        typer.echo(
+            f"{resultado['ainda_pendentes']} reunião(ões) seguem pendentes — API indisponível."
+        )
+    if resultado["inconsistentes"]:
+        typer.echo(
+            f"Aviso: {resultado['inconsistentes']} pendência(s) com arquivo de áudio ausente. "
+            "Precisa de conferência manual (UC-11 FE-02).",
+            err=True,
+        )
+
+
+@app.command()
+def sync() -> None:
+    """Reenvia reuniões pendentes de envio (UC-11)."""
+    resultado = reconciliation.reconcile(_settings.data_root)
+    _report_reconciliation(resultado)  # FA-01: nada pendente, nada pra dizer
 
 
 @app.command()
@@ -155,6 +186,10 @@ def rec(
     typer.echo(f"Arquivos em: {output_dir}")
     if estado == "recorded":
         typer.echo(f"Reunião registrada: {meeting_id}")
+        # docs/11-cli.md §3: "reconciliação é automática". Só faz sentido
+        # tentar aqui, não antes de gravar (RN-08) — e só se a API acabou
+        # de responder, senão é rede indisponível de novo, sem necessidade.
+        _report_reconciliation(reconciliation.reconcile(_settings.data_root))
     else:
         # UC-03 FE-01/FE-02: não é erro (docs/11-cli.md §5) — o áudio já
         # está íntegro em disco, só o registro na API que fica pendente.

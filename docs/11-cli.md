@@ -42,7 +42,7 @@ O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 
 **Renovação de token é silenciosa.** O usuário digita a senha em `cronista login` e não é interrompido de novo (UC-01, FA-01).
 
-**Reconciliação é automática na inicialização.** Qualquer comando que fale com a API verifica pendências antes. `cronista sync` existe para forçar manualmente.
+**Reconciliação é automática.** Qualquer comando que fale com a API verifica pendências. Em `cronista rec` isso acontece **depois** de encerrar a gravação, não antes de começar — rede nunca é pré-requisito pra iniciar ou manter uma captura (RN-08) — e só quando a própria reunião gravada agora confirmou com a API, pra não gastar tentativa sabendo que ela está fora. `cronista sync` existe pra forçar manualmente, a qualquer momento.
 
 **`cronista excluir` sempre pede confirmação** e mostra o que será removido (UC-09).
 
