@@ -17,14 +17,14 @@ Uma lacuna em qualquer eixo é defeito de especificação, e é aqui que ela apa
 
 | Recurso | Requisitos | Cobertura |
 |---|---|---|
-| RP-01 Gravação sem bot | RF-01 a RF-08 | ✅ |
-| RP-02 Separação de quem falou | RF-02, RF-11 | ✅ |
-| RP-03 Transcrição local | RF-10, RF-12 a RF-15 | ✅ |
-| RP-04 Resumo estruturado | RF-16 a RF-19 | ✅ |
-| RP-05 Importação de áudio | RF-09 | ✅ |
-| RP-06 Consulta e busca | RF-20 a RF-24 | ✅ |
-| RP-07 Acesso autenticado | RF-25 a RF-28 | ✅ |
-| RP-08 Retenção configurável | RF-29, RF-30 | ✅ |
+| RP-01 Gravação sem bot | RF-01 a RF-08 | sim |
+| RP-02 Separação de quem falou | RF-02, RF-11 | sim |
+| RP-03 Transcrição local | RF-10, RF-12 a RF-15 | sim |
+| RP-04 Resumo estruturado | RF-16 a RF-19 | sim |
+| RP-05 Importação de áudio | RF-09 | sim |
+| RP-06 Consulta e busca | RF-20 a RF-24 | sim |
+| RP-07 Acesso autenticado | RF-25 a RF-28 | sim |
+| RP-08 Retenção configurável | RF-29, RF-30 | sim |
 
 Nenhum recurso sem requisito. Nenhum requisito funcional órfão de recurso.
 

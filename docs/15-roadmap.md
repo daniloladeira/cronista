@@ -42,7 +42,7 @@ Worker em processo separado, consumindo a fila do banco. Detecção de fala, tra
 
 **Pronto quando:** uma reunião de 1 hora é transcrita em menos de 1 hora, com falantes corretos, e a linha de base de WER está medida.
 
-**Pré-requisito de ambiente: ✅ resolvido em 2026-08-17.** NVIDIA Container Toolkit 1.20.0 instalado no WSL e verificado — `docker run --rm --gpus all ubuntu nvidia-smi` enxerga a RTX 4060 de dentro do container.
+**Pré-requisito de ambiente: resolvido em 2026-08-17.** NVIDIA Container Toolkit 1.20.0 instalado no WSL e verificado — `docker run --rm --gpus all ubuntu nvidia-smi` enxerga a RTX 4060 de dentro do container.
 
 **Restrição medida na mesma verificação:** o desktop do Windows consome ~1,5–2 GB de VRAM, deixando ~6,3 GB reais dos 8 GB nominais. O Whisper cabe com pouca folga — ver [ADR-0014](adr/0014-worker-em-container-com-gpu.md).
 

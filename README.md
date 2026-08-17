@@ -4,7 +4,7 @@ Grava reuniões direto do computador, transcreve **localmente** e gera resumos e
 
 *Cronista: quem registra o que aconteceu, na ordem em que aconteceu.*
 
-> ## ⚠️ Estado atual: especificação
+> ## Estado atual: especificação
 >
 > **Ainda não há código.** Este repositório contém, por ora, a engenharia de requisitos e a especificação técnica completas. A implementação começa pela Fase 1 do [roadmap](docs/15-roadmap.md).
 
@@ -12,13 +12,13 @@ Grava reuniões direto do computador, transcreve **localmente** e gera resumos e
 
 O gatilho foi concreto: o Notion AI bateu no limite de uso. As alternativas de mercado ou cobram mensalidade, ou capam o recurso principal no plano gratuito, e **todas** mandam o áudio da reunião para a nuvem do fornecedor.
 
-Existem projetos open-source que resolvem quase o mesmo problema — [Meetily](https://github.com/Zackriya-Solutions/meetily) e [Hyprnote](https://github.com/fastrepl/hyprnote), ambos locais e de código aberto. Eles foram avaliados e **não** foram descartados por deficiência técnica. A aposta específica deste projeto é outra: **qualidade em português brasileiro com vocabulário de domínio**, que é onde as ferramentas English-first costumam decepcionar.
+Existem projetos open-source que resolvem quase o mesmo problema, como [Meetily](https://github.com/Zackriya-Solutions/meetily) e [Hyprnote](https://github.com/fastrepl/hyprnote), ambos locais e de código aberto. Eles foram avaliados e **não** foram descartados por deficiência técnica. A aposta específica deste projeto é outra: **qualidade em português brasileiro com vocabulário de domínio**, que é onde as ferramentas English-first costumam decepcionar.
 
-Se essa aposta se confirma é uma pergunta empírica, e há um [plano de testes](docs/14-plano-de-testes.md) para respondê-la — com métrica objetiva de transcrição e rubrica comparativa de resumo contra o Notion AI. O resultado será publicado aqui **inclusive se for desfavorável**.
+Se essa aposta se confirma é uma pergunta empírica, e há um [plano de testes](docs/14-plano-de-testes.md) para respondê-la, com métrica objetiva de transcrição e rubrica comparativa de resumo contra o Notion AI. O resultado será publicado aqui **inclusive se for desfavorável**.
 
 ## Como funciona
 
-Duas trilhas de áudio gravadas separadamente — microfone e saída do sistema — dão a separação entre "você" e "os outros" **sem diarização**, de graça e sem erro de atribuição. Cada trilha é transcrita na GPU local e mesclada por instante.
+Duas trilhas de áudio gravadas separadamente, microfone e saída do sistema, dão a separação entre "você" e "os outros" **sem diarização**, de graça e sem erro de atribuição. Cada trilha é transcrita na GPU local e mesclada por instante.
 
 ```mermaid
 flowchart LR
@@ -29,7 +29,7 @@ flowchart LR
     E --> F["Pauta · Decisões<br/>Pendências · Em aberto"]
 ```
 
-**A gravação nunca depende da API.** O áudio vai para o disco antes de qualquer chamada de rede — se o banco estiver fora do ar, a reunião é gravada do mesmo jeito e o registro se completa depois. Áudio de reunião não se regrava, e essa é a única falha irreversível do sistema. Ver [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md).
+**A gravação nunca depende da API.** O áudio vai para o disco antes de qualquer chamada de rede. Se o banco estiver fora do ar, a reunião é gravada do mesmo jeito e o registro se completa depois. Áudio de reunião não se regrava, e essa é a única falha irreversível do sistema. Ver [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md).
 
 ## Pilha
 
@@ -53,7 +53,7 @@ flowchart LR
 | [03 · Requisitos](docs/03-requisitos.md) | 30 funcionais e 22 não-funcionais, por FURPS+ |
 | [04 · Modelo de Casos de Uso](docs/04-modelo-de-casos-de-uso.md) | Atores e diagrama |
 | [05 · Detalhamento dos Casos de Uso](docs/05-detalhamento-casos-de-uso.md) | 11 casos de uso, 20 fluxos de exceção |
-| [06 · Matriz de Rastreabilidade](docs/06-matriz-rastreabilidade.md) | Cobertura recurso → requisito → caso de uso → teste |
+| [06 · Matriz de Rastreabilidade](docs/06-matriz-rastreabilidade.md) | Cobertura recurso, requisito, caso de uso, teste |
 
 ### Especificação técnica
 
@@ -90,7 +90,7 @@ Duas merecem destaque por serem incomuns:
 
 Windows 11, Python 3.13, GPU NVIDIA, Docker Engine nativo no WSL2, Ollama.
 
-A captura de loopback foi verificada nesta máquina antes do planejamento — o script está em [`scripts/check_audio.py`](scripts/check_audio.py) e é o primeiro passo de qualquer instalação.
+A captura de loopback foi verificada nesta máquina antes do planejamento. O script está em [`scripts/check_audio.py`](scripts/check_audio.py) e é o primeiro passo de qualquer instalação.
 
 ```bash
 python scripts/check_audio.py
@@ -108,7 +108,7 @@ A distro sobe, o systemd inicia o Docker e os containers voltam sozinhos (`resta
 
 Para derrubar tudo: `wsl --shutdown`.
 
-**Esquecer de subir não custa uma reunião.** Gravar não depende de API, banco nem WSL — o áudio vai para o disco e o registro se completa depois, com `cronista sync`. É exatamente o cenário que motivou o [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md): ninguém confere container antes de entrar numa reunião.
+**Esquecer de subir não custa uma reunião.** Gravar não depende de API, banco nem WSL. O áudio vai para o disco e o registro se completa depois, com `cronista sync`. É exatamente o cenário que motivou o [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md): ninguém confere container antes de entrar numa reunião.
 
 ---
 

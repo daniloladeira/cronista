@@ -55,12 +55,12 @@ Aplicada em 2026-08-17, antes de existir qualquer código — o momento mais bar
 
 | # | Onde | Estado |
 |---|---|---|
-| 1 | `pyproject.toml` — nome e executável | ✅ |
-| 2 | Nome do pacote | ✅ |
-| 3 | Menções na documentação | ✅ |
-| 4 | `.env.example`, `docker-compose.yml` — banco, containers, volumes | ✅ |
-| 5 | Diretório de dados em `%LOCALAPPDATA%` | ✅ na especificação |
-| 6 | Diretório do repositório no disco | ⏳ pendente |
+| 1 | `pyproject.toml` — nome e executável | sim |
+| 2 | Nome do pacote | sim |
+| 3 | Menções na documentação | sim |
+| 4 | `.env.example`, `docker-compose.yml` — banco, containers, volumes | sim |
+| 5 | Diretório de dados em `%LOCALAPPDATA%` | feito na especificação |
+| 6 | Diretório do repositório no disco | pendente |
 
 O item 6 é movimentação de pasta no sistema de arquivos, feita fora do controle de versão. Nada depende dele: os caminhos de áudio são relativos por decisão do [ADR-0004](adr/0004-uuid-timestamptz-caminhos-relativos.md), e o repositório não tem remoto.
 
