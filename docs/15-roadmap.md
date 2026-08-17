@@ -26,6 +26,8 @@ PostgreSQL em container, migração inicial com as quatro tabelas, FastAPI no ar
 
 **Pronto quando:** `docker compose up -d` sobe o banco, `alembic upgrade head` cria o esquema, `cronista login` devolve token, e um endpoint protegido recusa requisição sem token.
 
+**Concluída em 2026-08-17.** Os quatro critérios verificados contra ambiente real: Postgres em container (com a porta remapeada para 5433, já que a 5432 pertence a outra instância nativa desta máquina), migração aplicada com as quatro tabelas mais `alembic_version`, `cronista login` devolvendo tokens salvos em `%LOCALAPPDATA%\cronista\auth.json`, e a rejeição sem token coberta por `tests/test_auth.py` (CT-01 a CT-04, CT-40).
+
 **Fase de infraestrutura pura, sem funcionalidade visível.** É o custo de ter escolhido a API como centro do sistema ([ADR-0010](adr/0010-api-como-centro.md)), e é melhor pagá-lo de uma vez do que parcelado.
 
 ### Fase 2 · Captura e envio
