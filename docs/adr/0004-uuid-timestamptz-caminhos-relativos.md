@@ -27,10 +27,10 @@ O contexto que as tornou necessárias: o cliente pode gravar com a API fora do a
 
 ## Consequências
 
-**Positivas.** Registro offline nunca colide. UUIDv7 preserva ordenação temporal, mantendo o índice eficiente. Mover o acervo inteiro para outro disco não exige tocar em nenhuma linha do banco — o que também torna a renomeação do projeto barata ([16-nome.md](../16-nome.md)). Ambiguidade de fuso eliminada na origem.
+**Positivas.** Registro offline nunca colide. UUIDv7 preserva ordenação temporal, mantendo o índice eficiente. Mover o acervo inteiro para outro disco não exige tocar em nenhuma linha do banco, o que também torna a renomeação do projeto barata ([16-nome.md](../16-nome.md)). Ambiguidade de fuso eliminada na origem.
 
-**Negativas.** UUID ocupa mais espaço que inteiro e é menos legível ao depurar manualmente. UUIDv7 é gerado na aplicação, não pelo banco. Caminhos relativos exigem resolver a raiz em toda leitura de arquivo — dois níveis de indireção que precisam estar corretos.
+**Negativas.** UUID ocupa mais espaço que inteiro e é menos legível ao depurar manualmente. UUIDv7 é gerado na aplicação, não pelo banco. Caminhos relativos exigem resolver a raiz em toda leitura de arquivo, dois níveis de indireção que precisam estar corretos.
 
 ## Gatilho de reversão
 
-Nenhum previsto. São decisões cujo custo é permanente e baixo, e cujo benefício aparece exatamente no cenário que o projeto já planeja ter. Reverter só faria sentido se o acervo fosse garantidamente de máquina única e nunca migrado — condição que já se sabe falsa.
+Nenhum previsto. São decisões cujo custo é permanente e baixo, e cujo benefício aparece exatamente no cenário que o projeto já planeja ter. Reverter só faria sentido se o acervo fosse garantidamente de máquina única e nunca migrado, condição que já se sabe falsa.

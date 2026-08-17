@@ -1,8 +1,8 @@
 # ADR-0000 · Template
 
 - **Status:** template
-- **Data:** —
-- **Requisitos relacionados:** —
+- **Data:** AAAA-MM-DD
+- **Requisitos relacionados:** RF-nn, RNF-xx
 
 ## Contexto
 
@@ -19,9 +19,9 @@ O que foi decidido, em uma ou duas frases. Voz ativa.
 
 ## Consequências
 
-**Positivas** — o que a decisão viabiliza.
+**Positivas**: o que a decisão viabiliza.
 
-**Negativas** — o que ela custa. Um ADR sem consequência negativa é propaganda, não registro.
+**Negativas**: o que ela custa. Um ADR sem consequência negativa é propaganda, não registro.
 
 ## Gatilho de reversão
 
