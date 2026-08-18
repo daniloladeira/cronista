@@ -33,53 +33,51 @@ services:
       retries: 5
 
   # ─────────────────────────────────────────────────────────────────────────
-  # Worker de transcrição (ADR-0014). Entra na Fase 3; ainda não há imagem.
-  # Descomentar quando o código existir.
+  # Worker de transcrição (ADR-0014, docs/12-transcricao.md §7-9).
   #
   # Requer NVIDIA Container Toolkit instalado no WSL:
   #   sudo apt install -y nvidia-container-toolkit
   #   sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker
-  #
-  # worker:
-  #   build:
-  #     context: .
-  #     dockerfile: worker/Dockerfile
-  #   container_name: cronista-worker
-  #   restart: unless-stopped
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   environment:
-  #     # NÃO reaproveitar o DATABASE_URL do .env: aquele aponta pro host
-  #     # (127.0.0.1:5433, a porta remapeada). Dentro da rede do compose, o
-  #     # worker fala com o serviço "db" na porta interna do Postgres (5432).
-  #     DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-  #     # Idem: dentro do container a raiz do acervo é o ponto de montagem
-  #     # abaixo, não o caminho do Windows que está em DATA_ROOT no .env
-  #     # (docs/12-transcricao.md §8).
-  #     DATA_ROOT: /data
-  #     WHISPER_MODEL: ${WHISPER_MODEL}
-  #     WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE}
-  #     WHISPER_LANGUAGE: ${WHISPER_LANGUAGE}
-  #     WHISPER_IDLE_UNLOAD_SECONDS: ${WHISPER_IDLE_UNLOAD_SECONDS}
-  #     WHISPER_VOCABULARY: ${WHISPER_VOCABULARY}
-  #     WHISPER_FALLBACK_COMPUTE_TYPE: ${WHISPER_FALLBACK_COMPUTE_TYPE}
-  #     WORKER_POLL_INTERVAL_SECONDS: ${WORKER_POLL_INTERVAL_SECONDS}
-  #   volumes:
-  #     # Acervo montado somente-leitura. Fica no Windows de propósito:
-  #     # gravar é irreversível, ler é repetível (ADR-0012, ADR-0014).
-  #     - ${DATA_ROOT}:/data:ro
-  #     - whisper-models:/models
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: all
-  #             capabilities: [gpu]
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    container_name: cronista-worker
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # NÃO reaproveitar o DATABASE_URL do .env: aquele aponta pro host
+      # (127.0.0.1:5433, a porta remapeada). Dentro da rede do compose, o
+      # worker fala com o serviço "db" na porta interna do Postgres (5432).
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Idem: dentro do container a raiz do acervo é o ponto de montagem
+      # abaixo, não o caminho do Windows que está em DATA_ROOT no .env
+      # (docs/12-transcricao.md §8).
+      DATA_ROOT: /data
+      WHISPER_MODEL: ${WHISPER_MODEL}
+      WHISPER_COMPUTE_TYPE: ${WHISPER_COMPUTE_TYPE}
+      WHISPER_LANGUAGE: ${WHISPER_LANGUAGE}
+      WHISPER_IDLE_UNLOAD_SECONDS: ${WHISPER_IDLE_UNLOAD_SECONDS}
+      WHISPER_VOCABULARY: ${WHISPER_VOCABULARY}
+      WHISPER_FALLBACK_COMPUTE_TYPE: ${WHISPER_FALLBACK_COMPUTE_TYPE}
+      WORKER_POLL_INTERVAL_SECONDS: ${WORKER_POLL_INTERVAL_SECONDS}
+    volumes:
+      # Acervo montado somente-leitura. Fica no Windows de propósito:
+      # gravar é irreversível, ler é repetível (ADR-0012, ADR-0014).
+      - ${DATA_ROOT}:/data:ro
+      - whisper-models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
 volumes:
   pgdata:
     name: cronista-pgdata
-  # whisper-models:
-  #   name: cronista-whisper-models
+  whisper-models:
+    name: cronista-whisper-models
