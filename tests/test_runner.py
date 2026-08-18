@@ -87,12 +87,20 @@ def test_recover_interrupted_devolve_transcribing_para_recorded(db_session: Sess
     db_session.add_all([presa, intocada])
     db_session.commit()
 
-    runner.recover_interrupted(db_session)
+    count = runner.recover_interrupted(db_session)
 
     db_session.refresh(presa)
     db_session.refresh(intocada)
     assert presa.status == "recorded"
     assert intocada.status == "transcribed"
+    assert count == 1
+
+
+def test_recover_interrupted_devolve_zero_quando_nao_ha_nada_preso(db_session: Session) -> None:
+    db_session.add(_meeting(status="recorded"))
+    db_session.commit()
+
+    assert runner.recover_interrupted(db_session) == 0
 
 
 def test_process_meeting_sucesso_persiste_segmentos_mesclados(

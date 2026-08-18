@@ -21,11 +21,21 @@ from cronista.worker.transcription import transcribe_track
 logger = logging.getLogger(__name__)
 
 
-def recover_interrupted(session: Session) -> None:
+def recover_interrupted(session: Session) -> int:
     """CT-19: reunião presa em `transcribing` porque um worker anterior
-    caiu no meio volta pra `recorded`, elegível de novo (docs/12 §7)."""
-    session.execute(text("UPDATE meetings SET status = 'recorded' WHERE status = 'transcribing'"))
+    caiu no meio volta pra `recorded`, elegível de novo (docs/12 §7).
+
+    Devolve quantas reuniões foram recuperadas, pra quem chama decidir se
+    avisa alguém. Sem aviso nenhum quando não há nada a recuperar -- o
+    silêncio é a resposta esperada na maioria das inicializações, e um
+    aviso a cada partida do worker viraria ruído (mesmo espírito do
+    "recovered from a crashed start" do torlink, exibido só quando
+    relevante)."""
+    result = session.execute(
+        text("UPDATE meetings SET status = 'recorded' WHERE status = 'transcribing'")
+    )
     session.commit()
+    return result.rowcount
 
 
 def claim_next_meeting(session: Session) -> Meeting | None:
@@ -112,7 +122,12 @@ def run_forever(
 ) -> None:
     """O `enquanto verdadeiro` de docs/12-transcricao.md §7."""
     with session_factory() as session:
-        recover_interrupted(session)
+        recovered = recover_interrupted(session)
+    if recovered:
+        logger.info(
+            "Recuperada(s) %d reunião(ões) presa(s) em 'transcribing' (worker anterior caiu no meio).",
+            recovered,
+        )
 
     while True:
         with session_factory() as session:
