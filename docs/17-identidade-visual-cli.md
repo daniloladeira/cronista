@@ -1,6 +1,6 @@
 # Identidade Visual e Animação do CLI
 
-> **Versão:** 1.4 · **Última atualização:** 2026-08-17
+> **Versão:** 1.5 · **Última atualização:** 2026-08-18
 > Decisões de biblioteca: [ADR-0015](adr/0015-rich-como-apresentacao-cli.md) (Rich, comandos que rodam e terminam), [ADR-0016](adr/0016-textual-para-navegacao.md) (Textual, painel navegável de `list`/`ler`/`buscar`).
 > Este documento trata da parte em Rich — banner, indicador de sinal, spinners. O painel Textual ganha especificação visual própria quando a Fase 5 chegar.
 > **Este documento não introduz requisito novo.** Especifica como RF-05, RNF-U01, RNF-U02 e RNF-U03 se manifestam na tela. Se algum dia divergir de [11-cli.md](11-cli.md), aquele documento é quem define comportamento; este define aparência.
@@ -38,7 +38,8 @@ Ponto de partida: o artigo da engenharia por trás do banner animado do [GitHub 
 | Qualquer chamada de rede (`login`, `refresh`, envio de trilha, busca) | Indicador de status (`rich.status`) enquanto espera a resposta | RNF-U01, RNF-U03 — o usuário sabe que algo está acontecendo, e se foi rápido ou travou |
 | `cronista rec`, durante a gravação | Tela em tela cheia (`Live(..., screen=True)`): régua "cronista" no topo, cabeçalho numa linha só (título à esquerda, **traço fino por trilha embutido à direita** — `voce`/`outros`, ver `signal_bar.py` `render_header_trace()`), rodapé com duração. **Sem barra grande separada** — o traço do cabeçalho é o único indicador, layout decidido em `scripts/preview_rec_screen.py` | É a implementação visual de **RF-05**, que já exigia indicação de sinal por trilha |
 | `cronista rec`, durante uma pausa (RF-31) | O traço de sinal, à direita do cabeçalho, vira o texto "pausado" (âmbar, sem emoji); a duração no rodapé para de contar (RN-11: tempo pausado não é gravação). Decidido com preview visual comparado com o usuário antes de implementar, não só descrito em texto | RF-31 |
-| Transcrição (Fase 3) | Barra de progresso | Ainda não implementado; registrado aqui para não ser esquecido quando a Fase 3 chegar |
+| `cronista rec`, título da aba/janela do terminal | `"gravando · <título>"` / `"pausado · <título>"`, sequência OSC + `SetConsoleTitleW` no Windows (`signal_bar.py` `_set_tab_title()`, inspirado em `TabTitle.tsx` do projeto torlink) | Acha a janela certa numa reunião longa sem precisar voltar pro terminal — mesmo espírito de RF-05 |
+| Transcrição (Fase 3) | Barra de progresso | Ainda não implementado; matemática do brilho já portada (`cronista/client/sheen.py`), sem consumidor — registrado aqui para não ser esquecido |
 | Erro | Texto no papel `erro`, sem animação | RNF-U02 — mensagem de erro não é hora de efeito visual, é hora de clareza |
 
 **O indicador de sinal do `rec` é o elemento mais importante desta lista.** Não é decoração: é a resposta visual ao requisito que já existia. Um traço que sobe e desce com o volume captado é o que permite notar, durante a reunião, que um microfone está mudo — que é exatamente o cenário que RF-05 foi escrito para prevenir.
@@ -97,13 +98,17 @@ Duas tentativas antes desta, ambas testadas de verdade no terminal e descartadas
 
 **Não há arte pré-desenhada aqui.** Ao contrário do banner (§7), o medidor é calculado em tempo real a partir de um valor (nível de áudio) — não existe "quadro" para autorar, só a função que traduz nível em células acesas.
 
-## 7. Formato dos ativos do banner
+## 7. Banner de abertura
 
-> **Status: adiado, de propósito.** O "CRONISTA" em blocos foi testado (`scripts/preview_big_title.py`, fonte de matriz de LED 5×7) em resposta à pergunta "dá pra aumentar a letra", mas nunca decidido se entra de verdade nem onde aparece. É decorativo — o sistema funciona sem ele. Fica para quando `cronista rec` (etapa 5) estiver pronto e sobrar tempo de polimento, não antes.
+> **Status: implementado** (`cronista/client/banner.py`). O plano original desta seção previa arte desenhada à mão, em quadros animados, com arquivos de texto em `cronista/client/art/` — descartado. O que existe é mais simples: fonte de bloco gerada (`pyfiglet`, fonte `ansi_shadow`) mais um degradê de cor, estático, sem animação.
 
-O banner de abertura, ao contrário da barra, é arte de verdade — alguém desenha.
+**A cor não é degradê por letra nem contínuo simples.** É a técnica do projeto [torlink](https://github.com/baairon/torlink) (`src/ui/components/Logo.tsx`, `src/ui/theme.ts`), adaptada de roxo para os tons dourados de identidade do Cronista: cada **caractere** (não cada letra) recebe uma cor calculada por uma grade 2D — posição de linha e coluna combinadas — passando por quatro paradas de cor (`_HIGHLIGHT → _TOP → _ACCENT → _BASE → _SHADE`, ver `banner._sheen()`). O ponto mais escuro (`_SHADE = #B8934F`) nunca escurece além de um dourado reconhecível — duas tentativas anteriores foram rejeitadas por escurecerem demais.
 
-**Decisão deliberada: sem editor de frames dedicado.** O artigo do GitHub construiu um (`ascii-motion.app`) porque a escala do projeto deles justificava. Aqui, os quadros do banner são arquivos de texto simples em `cronista/client/art/`, um por quadro (`banner_01.txt`, `banner_02.txt`, ...), com as posições de cor mapeadas à parte, em código, por papel semântico — mesma separação de conteúdo e cor que o artigo descreve, só que sem ferramenta própria para produzi-la.
+**Tentativas rejeitadas, registradas pelo mesmo motivo do §6: vale saber o caminho, não só o resultado.** Um ícone de pergaminho sobre a letra "O" (primeiro em linha fina `╭─╮`, depois em bloco sólido `▄█▀`) foi testado duas vezes e rejeitado as duas — tirado de vez. Um degradê por letra simples (claro → escuro numa progressão linear) também foi tentado antes da técnica do torlink e achado insosso demais.
+
+**Fallback por largura de terminal**, mesmo padrão do `Splash.tsx` do torlink (`showLogo = cols >= LOGO_WIDTH + 2`): banner grande só se couber; terminal estreito cai pro nome simples em cor de identidade; saída não-interativa (redirecionada) cai pro texto puro, sem código ANSI.
+
+**Aparece só na primeira execução do dia** (`cronista` sem subcomando), com um marcador simples em `DATA_ROOT/.banner_shown` — mesmo espírito do artigo do GitHub Copilot CLI (§1) de não repetir a cada invocação. (Uma tentativa de virar menu navegável, ADR-0016, foi feita e revertida no mesmo dia — ver a nota lá.)
 
 ## 8. Plano de teste das artes
 
@@ -111,7 +116,7 @@ O que foi pedido explicitamente: testar antes de integrar.
 
 **Já testado.** Quatro protótipos descartáveis, testados de verdade no terminal do usuário: gradiente contínuo, quatro variações de paleta (arco-íris, VU clássico, cor sólida, duas tonalidades), painel com borda pulsando, e a escada de LED final. Os três primeiros foram removidos do repositório depois da decisão — não há razão para manter código de uma direção descartada. `scripts/preview_led_meter.py` é o único que sobrevive, como referência de comportamento para `cronista/client/signal_bar.py`, e será removido quando o medidor estiver de fato integrado ao comando `rec` (Fase 2, etapa 5).
 
-**A testar quando o banner existir.** `scripts/preview_banner.py`, no mesmo espírito: reproduz os quadros do banner isoladamente, sem precisar rodar o CLI inteiro, para iterar no desenho rápido.
+**Banner testado da mesma forma**, com scripts descartáveis iterados ao vivo com o usuário (`scripts/preview_banner_colors.py`, entre outras tentativas) até convergir na técnica do torlink (§7); removidos do repositório depois de integrados de verdade em `cronista/client/banner.py`, mesma prática do parágrafo acima.
 
 **Critérios de aceitação, antes de qualquer elemento visual ser aceito como pronto:**
 

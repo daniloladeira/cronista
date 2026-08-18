@@ -12,6 +12,8 @@ em âmbar, e a duração para de contar (RN-11: tempo pausado não é gravação
 
 from __future__ import annotations
 
+import ctypes
+import sys
 import threading
 import time
 from collections import deque
@@ -24,9 +26,17 @@ from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
+from cronista.client.colors import lerp_color
+
 VOCE_COLOR = "#DFB878"  # dourado — cor principal do sistema
 OUTROS_COLOR = "#A6A6A6"  # cinza neutro, sem calor, de propósito
 PAUSADO_COLOR = "#BA7517"  # âmbar — só aparece durante uma pausa (RF-31)
+
+_FLASH_COLOR = "#FFFFFF"  # brilho do shimmer no nome "cronista" (docs/17 §7)
+_FLASH_WIDTH = 2.5  # largura do brilho, em "caracteres"
+_SWEEP_SECONDS = 2.5  # tempo pra atravessar a palavra inteira
+_PAUSE_BETWEEN_SWEEPS = 1.5  # pausa apagada entre uma varredura e a próxima
+_BANNER_WORD = "cronista"
 
 _HISTORY = 24  # amostras guardadas por trilha
 _INLINE_WIDTH = 8  # quantas amostras recentes aparecem no traço do cabeçalho
@@ -47,6 +57,8 @@ def _tone(base_hex: str, intensity: float) -> str:
     b = int(base_hex[5:7], 16)
     frac = _MIN_TONE + (1 - _MIN_TONE) * max(0.0, min(intensity, 1.0))
     return f"#{int(r * frac):02x}{int(g * frac):02x}{int(b * frac):02x}"
+
+
 
 
 class SignalBar:
@@ -78,19 +90,64 @@ class SignalBar:
         # não avança enquanto pausado (RN-11).
         self._active_seconds = 0.0
         self._segment_started_at = time.monotonic()
+        # Relógio do shimmer do banner (§7): roda sempre, inclusive
+        # pausado — é decoração da marca, não indicação de gravação.
+        self._banner_started_at = time.monotonic()
 
     def __enter__(self) -> SignalBar:
         self._segment_started_at = time.monotonic()
+        # `get_renderable` faz o Live redesenhar sozinho a 13fps (o refresh
+        # já existia pro medidor de sinal); é o que dá vida ao shimmer sem
+        # depender de callback de áudio chegando — inclusive durante pausa,
+        # quando as threads de captura param de chamar update().
         self._live = Live(
-            self.render(), console=self._console, refresh_per_second=13, screen=True
+            console=self._console,
+            get_renderable=self.render,
+            refresh_per_second=13,
+            screen=True,
         )
         self._live.__enter__()
+        self._set_tab_title(f"gravando · {self._title}")
         return self
 
     def __exit__(self, *exc_info: object) -> None:
         if self._live is not None:
             self._live.__exit__(*exc_info)
             self._live = None
+        self._set_tab_title("cronista")
+
+    def _set_tab_title(self, title: str) -> None:
+        """Título da aba/janela do terminal — acha a janela certa numa
+        reunião longa sem precisar voltar pro terminal pra conferir
+        (inspirado em `TabTitle.tsx` do torlink). A sequência OSC funciona
+        na maioria dos terminais modernos; no Windows, complementa com a
+        API nativa porque o console legado nem sempre processa OSC.
+
+        Duas armadilhas, achadas rodando de verdade, não presumidas:
+
+        1. `Live` redireciona `sys.stdout` sozinho enquanto ativo
+           (`redirect_stdout=True`, padrão) — escrever em `sys.stdout`
+           aqui dentro passaria pelo próprio realce de sintaxe do Rich e
+           saía corrompido. `sys.__stdout__` é o fluxo original, imune a
+           esse redirecionamento.
+        2. A escrita usa o mesmo lock do Console (`console._lock`, o que
+           o Live usa por baixo pro próprio redesenho) — sem isso, a
+           thread de auto-refresh do shimmer (§7, `get_renderable`) pode
+           escrever no terminal ao mesmo tempo que esta chamada,
+           intercalando bytes.
+
+        Decorativo, então qualquer falha aqui (encoding do console legado,
+        stream fechado) é engolida — nunca pode derrubar a gravação por
+        causa do título da aba."""
+        try:
+            stream = sys.__stdout__ or sys.stdout
+            with self._console._lock:
+                stream.write(f"\x1b]0;{title}\x07")
+                stream.flush()
+            if sys.platform == "win32":
+                ctypes.windll.kernel32.SetConsoleTitleW(title)
+        except (UnicodeEncodeError, OSError, ValueError):
+            pass
 
     def _elapsed_seconds(self) -> int:
         with self._lock:
@@ -99,14 +156,10 @@ class SignalBar:
             return int(self._active_seconds + (time.monotonic() - self._segment_started_at))
 
     def update(self, speaker: str, level: float) -> None:
-        # `render()` readquire `self._lock` por conta própria (em
-        # `render_header_trace`/`_elapsed_seconds`) — chamá-lo AINDA dentro
-        # do `with` abaixo autodeadlocaria a thread, já que `threading.Lock`
-        # não é reentrante. Por isso a mutação solta o lock antes de desenhar.
+        # O Live redesenha sozinho a 13fps (`get_renderable`, __enter__) —
+        # só precisa mutar o estado aqui, sem forçar um render extra.
         with self._lock:
             self._history[speaker].append(level)
-        if self._live is not None:
-            self._live.update(self.render())
 
     def set_paused(self, paused: bool) -> None:
         with self._lock:
@@ -118,8 +171,9 @@ class SignalBar:
             else:
                 self._segment_started_at = now
             self._paused = paused
-        if self._live is not None:
-            self._live.update(self.render())
+        self._set_tab_title(
+            f"pausado · {self._title}" if paused else f"gravando · {self._title}"
+        )
 
     def render_header_trace(self, track: str, width: int = _INLINE_WIDTH) -> Text:
         """Traço fino de uma linha, para embutir ao lado do título."""
@@ -133,8 +187,27 @@ class SignalBar:
             text.append(_THIN_BLOCKS[idx], style=_tone(color, clamped))
         return text
 
-    def render_top_rule(self) -> Rule:
-        return Rule(Text("cronista", style=f"bold {VOCE_COLOR}"), style=VOCE_COLOR, align="left")
+    def _shimmer_position(self) -> float:
+        """Centro do brilho, em índice de caractere de `_BANNER_WORD`.
+        Roda num ciclo varredura+pausa; fora da palavra durante a pausa,
+        pra segurar um instante no dourado sólido antes de repetir."""
+        cycle = _SWEEP_SECONDS + _PAUSE_BETWEEN_SWEEPS
+        elapsed = (time.monotonic() - self._banner_started_at) % cycle
+        if elapsed > _SWEEP_SECONDS:
+            return -999.0
+        span = len(_BANNER_WORD) + 2 * _FLASH_WIDTH
+        return -_FLASH_WIDTH + span * (elapsed / _SWEEP_SECONDS)
+
+    def render_banner(self) -> Group:
+        """Nome "cronista" acima da régua, com um brilho branco varrendo o
+        dourado em loop (docs/17-identidade-visual-cli.md §7)."""
+        position = self._shimmer_position()
+        word = Text()
+        for i, ch in enumerate(_BANNER_WORD):
+            distance = abs(i - position)
+            intensity = max(0.0, 1.0 - distance / _FLASH_WIDTH)
+            word.append(ch, style=f"bold {lerp_color(VOCE_COLOR, _FLASH_COLOR, intensity)}")
+        return Group(word, Rule(style=VOCE_COLOR))
 
     def render_header(self) -> Table:
         title = Text()
@@ -168,7 +241,7 @@ class SignalBar:
 
     def render(self) -> Padding:
         content = Group(
-            self.render_top_rule(),
+            self.render_banner(),
             Text(""),
             self.render_header(),
             Text(""),

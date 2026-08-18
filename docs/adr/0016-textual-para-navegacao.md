@@ -42,3 +42,7 @@ Se, na prática, a divisão dois-modelos-de-interação confundir mais do que aj
 ## Nota
 
 Esta decisão é de escopo (Fase 5 — Busca e leitura, UC-07/UC-08), registrada agora porque a conversa que a motivou aconteceu agora. Implementação fica para quando a Fase 5 chegar; o projeto ainda está na Fase 2.
+
+## Nota (2026-08-18)
+
+Uma tentativa de estender este ADR pro menu inicial (`cronista` sem comando ficar navegável, Textual) foi implementada e revertida no mesmo dia — o resultado visual não ficou bom (testado de verdade, não só decidido em teoria) e foi descartado antes de virar commit. `cronista` sem comando continua mostrando o banner (docs/17 §7) seguido da ajuda do Typer, como já era. Fica registrado que a ideia foi tentada e por quê não vingou desta vez, caso volte à mesa: a lição foi entregar um preview de verdade (screenshot/export) antes de ligar qualquer coisa nova ao CLI real, não só descrever em texto.

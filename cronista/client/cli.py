@@ -4,15 +4,19 @@ from __future__ import annotations
 
 import socket
 import threading
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+import jwt
 import typer
 from rich.console import Console
 from rich.table import Table
+from rich.text import Text
 
 from cronista.client import (
     api_client,
+    banner,
     capture,
     naming,
     reconciliation,
@@ -28,13 +32,80 @@ app = typer.Typer(add_completion=False)
 _console = Console()
 _settings = ClientSettings()
 
+_SUBTITLE_COLOR = "#F7ECDA"  # dourado bem claro
+_MINIMAL_COLOR = "#A6A6A6"  # neutro, mesmo tom de "outros" (signal_bar.py)
+_SUBTITLE = "Grava, transcreve e resume reuniões localmente."
+_CATEGORIAS = "transcreva reuniões · resumos automáticos · anotações"
+_COMANDOS_MINIMOS = [("r", "rec"), ("d", "devices"), ("s", "sync"), ("l", "login")]
 
-@app.callback()
-def _callback() -> None:
+
+def _usuario_logado() -> str:
+    """Decodifica o `sub` do access token só pra exibir -- sem verificar
+    assinatura, porque não faz sentido validar aqui: o cliente nunca tem
+    o JWT_SECRET (ClientSettings é deliberadamente restrito, ver
+    core/config.py), e a API já vai recusar o token na próxima chamada
+    de rede se ele for inválido de verdade. Isto é só cosmético."""
+    tokens = token_store.load_tokens()
+    if tokens is None:
+        return "não autenticado"
+    try:
+        payload = jwt.decode(tokens["access_token"], options={"verify_signature": False})
+        return str(payload.get("sub", "autenticado"))
+    except jwt.PyJWTError:
+        return "autenticado"
+
+
+def _tela_inicial_partes() -> list[Text]:
+    # `cronista` sem comando: banner de abertura toda vez (docs/17
+    # §3, §7) -- não é mais throttle de uma vez por dia, já que agora é
+    # tela alternativa (some ao sair, sem poluir o histórico) em vez de
+    # imprimir e ficar no scrollback. Resumo mínimo embaixo, não a tabela
+    # de ajuda do Typer (`--help` explícito continua completo).
+    partes: list[Text] = [Text(), banner.render(_console), Text()]
+    partes.append(Text(_SUBTITLE, style=f"bold {_SUBTITLE_COLOR}"))
+    partes.append(Text())
+    partes.append(Text(_CATEGORIAS, style=_MINIMAL_COLOR))
+    partes.append(Text())
+    partes.append(Text(f"{_usuario_logado()} · {socket.gethostname()}", style=_MINIMAL_COLOR))
+    partes.append(Text())
+    comandos = "    ".join(f"{letra} - {nome}" for letra, nome in _COMANDOS_MINIMOS)
+    partes.append(Text(comandos, style=_MINIMAL_COLOR))
+    return partes
+
+
+def _render_tela_inicial() -> None:
+    """Alinhado à esquerda, de propósito -- duas tentativas de centralizar
+    (`justify="center"`/`Align`) quebraram de verdade no terminal do
+    usuário: texto cortado na borda em janela estreita, banner empurrado
+    pra fora da tela em janela alta. Suspeita é `console.width`/`.height`
+    do Rich não baterem com o tamanho real da janela nesse terminal, mas
+    sem confirmar isso na máquina de verdade, mais seguro não depender de
+    largura nem altura nenhuma pra posicionar (docs/17 §7)."""
+    for parte in _tela_inicial_partes():
+        _console.print(parte)
+
+
+@app.callback(invoke_without_command=True)
+def _callback(ctx: typer.Context) -> None:
     """Cronista: grava, transcreve e resume reuniões localmente."""
-    # Existe para impedir que o Typer colapse o único comando registrado
-    # (login) em comando padrão do app, sem nome de subcomando. Some de
-    # necessidade assim que a Fase 2 acrescentar mais comandos.
+    if ctx.invoked_subcommand is not None:
+        return
+    if not _console.is_terminal:
+        # Script, pipe, CI: sem terminal de verdade não tem quem aperte
+        # Ctrl+C, e a tela alternativa não faz sentido nenhum aqui —
+        # imprime uma vez e sai, como sempre foi nesse caso.
+        _render_tela_inicial()
+        return
+    # Tela alternativa, igual ao `rec` (Live(..., screen=True)) -- some
+    # ao sair, sem deixar rastro no histórico de rolagem. Ctrl+C é o
+    # único jeito de sair, de propósito: nada pra navegar aqui.
+    with _console.screen():
+        _render_tela_inicial()
+        try:
+            while True:
+                time.sleep(0.1)
+        except KeyboardInterrupt:
+            pass
 
 
 @app.command()
