@@ -130,7 +130,7 @@ Escopo tem valor pelo que exclui. Nenhum destes é impossível; todos foram cons
 |---|---|
 | Multiusuário e cadastro aberto | Uso pessoal. Autenticação existe para proteger acesso remoto, não para separar usuários |
 | Bot que entra na reunião | Frágil a mudança de interface das plataformas, e visível aos participantes |
-| Transcrição em tempo real durante a reunião | Complexidade alta e valor baixo, o resumo é consumido depois |
+| Transcrição em tempo real durante a reunião | Exigiria um segundo modelo de streaming (o `large-v3` local não é feito pra isso), disputando a mesma VRAM do resumo (§3.1), ou uma API de nuvem paga — ~R$70 a R$100+/mês estimado em ago/2026 (Deepgram, duas trilhas), primeiro custo recorrente do projeto. O ganho é só ver o texto alguns segundos mais cedo, já que o resumo é consumido depois |
 | Aplicativo móvel | O áudio está no computador |
 | Integração com CRM, calendário ou Slack | Escopo de produto comercial, não de ferramenta pessoal |
 | Tradução entre idiomas | O uso é monolíngue |
