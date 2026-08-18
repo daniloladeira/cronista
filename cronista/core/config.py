@@ -12,6 +12,8 @@ Quatro classes porque nem todo processo precisa de tudo:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Convenção de layout em disco (docs/08-modelo-de-dados.md §2):
@@ -19,15 +21,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # pending.json fica direto em DATA_ROOT, ao lado, não dentro daqui.
 RECORDINGS_DIRNAME = "recordings"
 
+# Caminho absoluto, não ".env" relativo -- um relativo resolve contra o
+# diretório de trabalho no momento da chamada, o que funcionava sempre que
+# tudo rodava de dentro do repo, mas quebra assim que `cronista` é instalado
+# globalmente (pipx) e chamado de qualquer pasta (achado rodando de verdade
+# fora do repo, não presumido).
+_ENV_FILE = Path(__file__).resolve().parent.parent.parent / ".env"
+
 
 class DatabaseSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
 
     database_url: str
 
 
 class ClientSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
 
     api_base_url: str
     data_root: str
