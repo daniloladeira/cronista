@@ -41,7 +41,6 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir .
 
-# Sem runner.py ainda (docs/12 §7, etapa seguinte) — placeholder que não
-# falha o build. `docker compose run --rm worker nvidia-smi` continua
-# funcionando pra verificar a GPU, porque sobrescreve este CMD.
-CMD ["python3.13", "-c", "print('cronista worker: ainda sem runner.py')"]
+# `docker compose run --rm worker nvidia-smi` continua funcionando pra
+# verificar a GPU, porque sobrescreve este CMD.
+CMD ["python3.13", "-m", "cronista.worker.main"]
