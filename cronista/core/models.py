@@ -96,6 +96,15 @@ class Meeting(Base):
         # RN-07: só gera resumo a partir de 'transcribed' ou 'summarized'.
         return self.status in ("transcribed", "summarized")
 
+    def is_reprocessable(self) -> bool:
+        # docs/12-transcricao.md §10: cobre os dois casos em que
+        # reprocessar faz sentido -- a tentativa anterior falhou, ou já
+        # teve sucesso mas o usuário quer refazer (ex.: vocabulário
+        # novo). 'recorded' fica de fora por já estar na fila; 'registering'/
+        # 'transcribing'/'summary_failed' ficam de fora por não terem o
+        # que reprocessar ainda ou terem outra operação em andamento.
+        return self.status in ("transcription_failed", "transcribed", "summarized")
+
 
 class Track(Base):
     __tablename__ = "tracks"

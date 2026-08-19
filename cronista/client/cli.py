@@ -124,6 +124,22 @@ def login(
     typer.echo("Login realizado. Token salvo.")
 
 
+@app.command()
+def reprocessar(meeting_id: str = typer.Argument(..., help="ID da reunião")) -> None:
+    """Retranscreve, substituindo os segmentos antigos (UC-05, RF-15)."""
+    try:
+        api_client.reprocessar(meeting_id)
+    except api_client.ApiError as exc:
+        typer.echo(f"Erro: {exc}", err=True)
+        if exc.status_code == 404:
+            raise typer.Exit(code=1)
+        if exc.status_code == 409:
+            raise typer.Exit(code=5)
+        raise typer.Exit(code=2 if exc.status_code == 401 else 3)
+
+    typer.echo("Reunião marcada para reprocessamento — o worker pega na próxima passada.")
+
+
 def _report_reconciliation(resultado: ReconcileResult) -> None:
     if resultado["reconciliadas"]:
         typer.echo(f"{resultado['reconciliadas']} reunião(ões) pendente(s) reconciliada(s).")

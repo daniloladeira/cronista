@@ -1,6 +1,6 @@
 # Transcrição · Contrato
 
-> **Versão:** 1.2 · **Última atualização:** 2026-08-19
+> **Versão:** 1.3 · **Última atualização:** 2026-08-19
 > Decisões correspondentes: [0001](adr/0001-captura-local-duas-trilhas.md), [0002](adr/0002-faster-whisper-local.md), [0014](adr/0014-worker-em-container-com-gpu.md)
 
 ## 1. Pipeline
@@ -143,7 +143,9 @@ Se a segunda tentativa também falhar, é uma falha como qualquer outra (§7): `
 
 ## 10. Reprocessamento (RF-15, CT-20)
 
-`cronista reprocessar <id>` ([11-cli.md](11-cli.md) §2) devolve a reunião a `recorded`, tornando-a elegível ao worker de novo (`Meeting.is_transcribable()`, RN-06). Cobre os dois casos em que isso faz sentido:
+> **Status: implementado.** `POST /meetings/{id}/transcribe` (`cronista/api/routes/meetings.py`), `Meeting.is_reprocessable()` (`cronista/core/models.py`), comando `cronista reprocessar <id>` (`cronista/client/cli.py`). Validado de ponta a ponta contra infraestrutura real: reunião real reprocessada via CLI → API → banco (status `transcribed` → `recorded`), depois pega pelo worker de verdade e retranscrita, com os segmentos substituídos.
+
+`cronista reprocessar <id>` ([11-cli.md](11-cli.md) §2) devolve a reunião a `recorded`, tornando-a elegível ao worker de novo (`Meeting.is_reprocessable()`). Cobre os dois casos em que isso faz sentido:
 
 - **`transcription_failed`** — a tentativa anterior não deu certo (falta de memória, por exemplo); o áudio está intacto (§7), só falta pedir de novo.
 - **`transcribed` ou `summarized`** — a transcrição já teve sucesso, mas o usuário quer refazer (depois de ajustar `WHISPER_VOCABULARY`, por exemplo).

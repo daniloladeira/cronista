@@ -175,3 +175,25 @@ def register_track(
     db.commit()
     db.refresh(track)
     return track
+
+
+@router.post("/{meeting_id}/transcribe", response_model=MeetingOut)
+def reprocess_meeting(meeting_id: UUID, db: Session = Depends(get_db)) -> Meeting:
+    """Recoloca a reunião na fila de transcrição (UC-05, RF-15,
+    docs/12-transcricao.md §10). Cobre falha anterior e "refazer" numa
+    reunião já transcrita/resumida -- não é retentativa automática, é
+    sempre um pedido explícito do usuário."""
+    meeting = db.get(Meeting, meeting_id)
+    if meeting is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reunião não encontrada.")
+
+    if not meeting.is_reprocessable():
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Reunião em '{meeting.status}' não pode ser reprocessada agora.",
+        )
+
+    meeting.status = "recorded"
+    db.commit()
+    db.refresh(meeting)
+    return meeting

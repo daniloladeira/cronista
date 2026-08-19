@@ -74,3 +74,8 @@ def create_meeting(payload: dict) -> dict:
 
 def register_track(meeting_id: object, payload: dict) -> dict:
     return _authed_post(f"/meetings/{meeting_id}/tracks", payload)
+
+
+def reprocessar(meeting_id: object) -> dict:
+    """UC-05, RF-15 (docs/12-transcricao.md §10)."""
+    return _authed_post(f"/meetings/{meeting_id}/transcribe", {})
