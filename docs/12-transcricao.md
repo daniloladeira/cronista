@@ -1,6 +1,6 @@
 # Transcrição · Contrato
 
-> **Versão:** 1.1 · **Última atualização:** 2026-08-17
+> **Versão:** 1.2 · **Última atualização:** 2026-08-19
 > Decisões correspondentes: [0001](adr/0001-captura-local-duas-trilhas.md), [0002](adr/0002-faster-whisper-local.md), [0014](adr/0014-worker-em-container-com-gpu.md)
 
 ## 1. Pipeline
@@ -131,11 +131,15 @@ Vive em `WorkerSettings` (`cronista/core/config.py`), seguindo a mesma lógica d
 
 ## 9. Memória insuficiente: uma nova tentativa (§3.1)
 
+> **Status: implementado** (`cronista/worker/model_manager.py`, `ModelManager`). Descarregar por ociosidade (§8) e a retentativa por falta de memória (esta seção) ficam no mesmo componente, porque as duas mexem no mesmo ciclo de vida do modelo.
+
 O mecanismo é fixado aqui; os valores exatos (RTX 4060, `large-v3`) já estão medidos e registrados em §3.1. Ao encontrar erro de memória insuficiente da GPU — seja carregando o modelo, seja durante a transcrição — o worker tenta **uma única vez** recarregar com `WHISPER_FALLBACK_COMPUTE_TYPE` antes de desistir. Nunca entra em loop de retentativa.
 
 **A segunda tentativa troca só a quantização, nunca o modelo.** Cair para um modelo menor que `large-v3` mudaria a qualidade da transcrição de um jeito que o usuário não pediu; uma quantização mais leve é uma degradação mais previsível e reversível — a próxima transcrição, com mais memória livre, volta a usar a configuração normal.
 
-Se a segunda tentativa também falhar, é uma falha como qualquer outra (§7): `status → transcription_failed`, erro registrado, áudio preservado (CT-18).
+Se a segunda tentativa também falhar, é uma falha como qualquer outra (§7): `status → transcription_failed`, erro registrado, áudio preservado (CT-18). `ModelManager.reload_with_fallback()` levanta `FallbackExhausted` nesse caso, capturado pelo tratamento genérico de falha do `process_meeting`.
+
+**Detecção de falta de memória é por mensagem, não por classe de exceção.** O ctranslate2 não expõe um tipo próprio pra isso — só um `RuntimeError` com o texto do erro CUDA embutido (`is_out_of_memory()`, busca case-insensitive por "out of memory"). Testado com mensagens sintéticas, não contra uma falta de memória real de GPU: a RTX 4060 desta máquina tem folga hoje (§3.1), e forçar um OOM de propósito é arriscado/pouco confiável de reproduzir. O que **foi** medido de verdade em GPU real é o ciclo de carregar/descarregar por ociosidade (§8) — carga fria ~106s, carga com cache quente ~7s, descarregamento e recarga confirmados no container.
 
 ## 10. Reprocessamento (RF-15, CT-20)
 

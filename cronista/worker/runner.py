@@ -9,13 +9,13 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
-from faster_whisper import WhisperModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from cronista.core.config import RECORDINGS_DIRNAME, WorkerSettings
 from cronista.core.models import Meeting, Segment
 from cronista.worker.merge import merge_tracks
+from cronista.worker.model_manager import ModelManager, is_out_of_memory
 from cronista.worker.transcription import transcribe_track
 
 logger = logging.getLogger(__name__)
@@ -56,19 +56,14 @@ def claim_next_meeting(session: Session) -> Meeting | None:
     return meeting
 
 
-def process_meeting(
-    session: Session,
+def _transcribe_meeting_tracks(
     meeting: Meeting,
-    model: WhisperModel,
+    model_manager: ModelManager,
     settings: WorkerSettings,
-) -> None:
-    """Ciclo de uma reunião: transcreve cada trilha, mescla e persiste
-    (docs/12 §7, passos 2 a 6). Falha em qualquer passo marca
-    `transcription_failed` e preserva o áudio (RNF-R03) — nada em
-    `recordings/` é tocado aqui."""
-    recordings_root = Path(settings.data_root) / RECORDINGS_DIRNAME
-    try:
-        segments_by_speaker = {
+    recordings_root: Path,
+) -> dict[str, list]:
+    def _transcrever_com(model) -> dict[str, list]:
+        return {
             track.speaker: transcribe_track(
                 model,
                 track.absolute_path(recordings_root),
@@ -77,6 +72,37 @@ def process_meeting(
             )
             for track in meeting.tracks
         }
+
+    model = model_manager.acquire()
+    try:
+        return _transcrever_com(model)
+    except Exception as exc:
+        if not is_out_of_memory(exc):
+            raise
+        logger.warning(
+            "Falta de memória transcrevendo reunião %s; tentando de novo com %s (docs/12 §9).",
+            meeting.id,
+            settings.whisper_fallback_compute_type,
+        )
+        model = model_manager.reload_with_fallback()  # levanta FallbackExhausted se já era o fallback
+        return _transcrever_com(model)
+
+
+def process_meeting(
+    session: Session,
+    meeting: Meeting,
+    model_manager: ModelManager,
+    settings: WorkerSettings,
+) -> None:
+    """Ciclo de uma reunião: transcreve cada trilha, mescla e persiste
+    (docs/12 §7, passos 2 a 6). Falha em qualquer passo marca
+    `transcription_failed` e preserva o áudio (RNF-R03) — nada em
+    `recordings/` é tocado aqui."""
+    recordings_root = Path(settings.data_root) / RECORDINGS_DIRNAME
+    try:
+        segments_by_speaker = _transcribe_meeting_tracks(
+            meeting, model_manager, settings, recordings_root
+        )
         merged = merge_tracks(segments_by_speaker)
     except Exception as exc:
         meeting.status = "transcription_failed"
@@ -105,22 +131,25 @@ def process_meeting(
     session.commit()
 
 
-def run_once(session: Session, model: WhisperModel, settings: WorkerSettings) -> bool:
+def run_once(session: Session, model_manager: ModelManager, settings: WorkerSettings) -> bool:
     """Processa uma reunião da fila, se houver. Devolve `False` quando a
     fila está vazia — quem chama decide o que fazer (dormir, parar)."""
     meeting = claim_next_meeting(session)
     if meeting is None:
         return False
-    process_meeting(session, meeting, model, settings)
+    process_meeting(session, meeting, model_manager, settings)
     return True
 
 
 def run_forever(
     session_factory: Callable[[], Session],
-    model: WhisperModel,
     settings: WorkerSettings,
 ) -> None:
-    """O `enquanto verdadeiro` de docs/12-transcricao.md §7."""
+    """O `enquanto verdadeiro` de docs/12-transcricao.md §7. O modelo é
+    carregado sob demanda e descarregado por ociosidade pelo
+    `ModelManager` (§8) — não é mais recebido pronto de fora."""
+    model_manager = ModelManager(settings)
+
     with session_factory() as session:
         recovered = recover_interrupted(session)
     if recovered:
@@ -131,6 +160,11 @@ def run_forever(
 
     while True:
         with session_factory() as session:
-            processed = run_once(session, model, settings)
+            processed = run_once(session, model_manager, settings)
         if not processed:
+            if model_manager.release_if_idle():
+                logger.info(
+                    "Modelo descarregado por %ds de ociosidade (docs/12 §8).",
+                    settings.whisper_idle_unload_seconds,
+                )
             time.sleep(settings.worker_poll_interval_seconds)

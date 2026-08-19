@@ -13,7 +13,32 @@ from sqlalchemy.orm import Session
 from cronista.core.config import WorkerSettings
 from cronista.core.models import Meeting, Segment, Track
 from cronista.worker import runner
+from cronista.worker.model_manager import FallbackExhausted
 from cronista.worker.transcription import TranscribedSegment
+
+
+class _FakeModelManager:
+    """`transcribe_track` é mockado nesses testes, então a identidade do
+    "modelo" nunca importa -- só o número de chamadas e o comportamento
+    do fallback, pra testar a retentativa de §9 sem GPU nenhuma."""
+
+    def __init__(self, fallback_raises: bool = False) -> None:
+        self.acquire_calls = 0
+        self.fallback_calls = 0
+        self._fallback_raises = fallback_raises
+
+    def acquire(self) -> object:
+        self.acquire_calls += 1
+        return object()
+
+    def reload_with_fallback(self) -> object:
+        self.fallback_calls += 1
+        if self._fallback_raises:
+            raise FallbackExhausted("falta de memória já no fallback")
+        return object()
+
+    def release_if_idle(self) -> bool:
+        return False
 
 
 def _meeting(**overrides: object) -> Meeting:
@@ -119,7 +144,7 @@ def test_process_meeting_sucesso_persiste_segmentos_mesclados(
 
     monkeypatch.setattr(runner, "transcribe_track", fake_transcribe_track)
 
-    runner.process_meeting(db_session, meeting, model=object(), settings=worker_settings)
+    runner.process_meeting(db_session, meeting, model_manager=_FakeModelManager(), settings=worker_settings)
 
     db_session.refresh(meeting)
     assert meeting.status == "transcribed"
@@ -148,16 +173,71 @@ def test_process_meeting_falha_marca_transcription_failed_sem_apagar_audio(
     db_session.commit()
 
     def fake_transcribe_track(model, path, language, vocabulary=""):
-        raise RuntimeError("CUDA out of memory")
+        raise RuntimeError("arquivo de áudio corrompido")
 
     monkeypatch.setattr(runner, "transcribe_track", fake_transcribe_track)
+    model_manager = _FakeModelManager()
 
-    runner.process_meeting(db_session, meeting, model=object(), settings=worker_settings)
+    runner.process_meeting(db_session, meeting, model_manager=model_manager, settings=worker_settings)
 
     db_session.refresh(meeting)
     assert meeting.status == "transcription_failed"
-    assert meeting.error == "CUDA out of memory"
+    assert meeting.error == "arquivo de áudio corrompido"
     assert db_session.query(Segment).filter(Segment.meeting_id == meeting.id).count() == 0
+    # erro comum, não parece OOM -- nunca deveria ter acionado o fallback (§9)
+    assert model_manager.fallback_calls == 0
+
+
+def test_process_meeting_oom_tenta_de_novo_com_fallback_e_consegue(
+    db_session: Session, worker_settings: WorkerSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    meeting = _meeting(status="transcribing")
+    _track(meeting, "voce")
+    db_session.add(meeting)
+    db_session.commit()
+
+    tentativas = {"n": 0}
+
+    def fake_transcribe_track(model, path, language, vocabulary=""):
+        tentativas["n"] += 1
+        if tentativas["n"] == 1:
+            raise RuntimeError("CUDA failed with error out of memory")
+        return [TranscribedSegment(start_ms=0, end_ms=1000, text="ok no fallback")]
+
+    monkeypatch.setattr(runner, "transcribe_track", fake_transcribe_track)
+    model_manager = _FakeModelManager()
+
+    runner.process_meeting(db_session, meeting, model_manager=model_manager, settings=worker_settings)
+
+    db_session.refresh(meeting)
+    assert meeting.status == "transcribed"
+    assert model_manager.fallback_calls == 1
+    segments = db_session.query(Segment).filter(Segment.meeting_id == meeting.id).all()
+    assert [s.text for s in segments] == ["ok no fallback"]
+
+
+def test_process_meeting_oom_persistente_marca_falha_sem_loop(
+    db_session: Session, worker_settings: WorkerSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # OOM na primeira tentativa E no fallback -- desiste, não tenta um
+    # terceiro jeito nem troca de modelo (docs/12 §9).
+    meeting = _meeting(status="transcribing")
+    _track(meeting, "voce")
+    db_session.add(meeting)
+    db_session.commit()
+
+    def fake_transcribe_track(model, path, language, vocabulary=""):
+        raise RuntimeError("CUDA failed with error out of memory")
+
+    monkeypatch.setattr(runner, "transcribe_track", fake_transcribe_track)
+    model_manager = _FakeModelManager(fallback_raises=True)
+
+    runner.process_meeting(db_session, meeting, model_manager=model_manager, settings=worker_settings)
+
+    db_session.refresh(meeting)
+    assert meeting.status == "transcription_failed"
+    assert "fallback" in meeting.error.lower()
+    assert model_manager.fallback_calls == 1
 
 
 def test_process_meeting_reprocessamento_substitui_segmentos_antigos(
@@ -177,7 +257,7 @@ def test_process_meeting_reprocessamento_substitui_segmentos_antigos(
 
     monkeypatch.setattr(runner, "transcribe_track", fake_transcribe_track)
 
-    runner.process_meeting(db_session, meeting, model=object(), settings=worker_settings)
+    runner.process_meeting(db_session, meeting, model_manager=_FakeModelManager(), settings=worker_settings)
 
     segments = db_session.query(Segment).filter(Segment.meeting_id == meeting.id).all()
     assert [s.text for s in segments] == ["versão nova"]
@@ -186,7 +266,7 @@ def test_process_meeting_reprocessamento_substitui_segmentos_antigos(
 def test_run_once_devolve_false_quando_fila_vazia(
     db_session: Session, worker_settings: WorkerSettings
 ) -> None:
-    assert runner.run_once(db_session, model=object(), settings=worker_settings) is False
+    assert runner.run_once(db_session, model_manager=_FakeModelManager(), settings=worker_settings) is False
 
 
 def test_run_once_processa_uma_reuniao_e_devolve_true(
@@ -203,7 +283,7 @@ def test_run_once_processa_uma_reuniao_e_devolve_true(
         lambda model, path, language, vocabulary="": [TranscribedSegment(0, 1000, "oi")],
     )
 
-    assert runner.run_once(db_session, model=object(), settings=worker_settings) is True
+    assert runner.run_once(db_session, model_manager=_FakeModelManager(), settings=worker_settings) is True
 
     db_session.refresh(meeting)
     assert meeting.status == "transcribed"
