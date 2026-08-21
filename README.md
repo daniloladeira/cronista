@@ -10,11 +10,11 @@ Grava reuniões direto do computador, transcreve **localmente** e gera resumos e
 
 ## Por que existe
 
-O gatilho foi concreto: o Notion AI bateu no limite de uso. As alternativas de mercado ou cobram mensalidade, ou capam o recurso principal no plano gratuito, e **todas** mandam o áudio da reunião para a nuvem do fornecedor.
+Ferramentas de IA para reunião, em geral, cobram mensalidade ou limitam o recurso principal no plano gratuito, e enviam o áudio da reunião para a nuvem do fornecedor.
 
-Existem projetos open-source que resolvem quase o mesmo problema, como [Meetily](https://github.com/Zackriya-Solutions/meetily) e [Hyprnote](https://github.com/fastrepl/hyprnote), ambos locais e de código aberto. Eles foram avaliados e **não** foram descartados por deficiência técnica. A aposta específica deste projeto é outra: **qualidade em português brasileiro com vocabulário de domínio**, que é onde as ferramentas English-first costumam decepcionar.
+Existem projetos open-source que resolvem um problema semelhante, como [Meetily](https://github.com/Zackriya-Solutions/meetily) e [Hyprnote](https://github.com/fastrepl/hyprnote), ambos locais e de código aberto — nenhum dos dois é descartado aqui por deficiência técnica. O foco deste projeto é outro: **qualidade de transcrição e resumo em português brasileiro, com vocabulário de domínio**, área em que ferramentas com foco no inglês tendem a ter desempenho mais fraco.
 
-Se essa aposta se confirma é uma pergunta empírica, e há um [plano de testes](docs/14-plano-de-testes.md) para respondê-la, com métrica objetiva de transcrição e rubrica comparativa de resumo contra o Notion AI. O resultado será publicado aqui **inclusive se for desfavorável**.
+Se esse foco se traduz em vantagem real é uma pergunta empírica. Há um [plano de testes](docs/14-plano-de-testes.md) que mede isso, com métrica objetiva de transcrição (WER) e rubrica comparativa de resumo contra o Notion AI. O resultado é publicado aqui, **inclusive se for desfavorável**.
 
 ## Como funciona
 
