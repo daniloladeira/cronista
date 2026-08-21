@@ -1,11 +1,12 @@
-"""Testes do banner de abertura em `cronista` sem comando (docs/17-identidade-visual-cli.md §3, §7)."""
+"""Testes do banner de abertura em `cronista` sem comando (docs/17-identidade-visual-cli.md §3, §7).
+`_usuario_logado` mora em `session_info.py` agora (compartilhado com o
+menu navegável) -- testado em tests/test_session_info.py."""
 
 from __future__ import annotations
 
-import jwt
 from typer.testing import CliRunner
 
-from cronista.client import cli
+from cronista.client import cli, session_info
 
 runner = CliRunner()
 
@@ -61,39 +62,10 @@ def test_help_explicito_continua_mostrando_ajuda_completa(monkeypatch, tmp_path)
     assert "Usage" in result.stdout or "Uso" in result.stdout
 
 
-def test_usuario_logado_sem_token_salvo(monkeypatch):
-    monkeypatch.setattr(cli.token_store, "load_tokens", lambda: None)
-
-    assert cli._usuario_logado() == "não autenticado"
-
-
-def test_usuario_logado_decodifica_sub_do_token(monkeypatch):
-    token = jwt.encode(
-        {"sub": "cronista"}, "segredo-de-teste-com-comprimento-adequado", algorithm="HS256"
-    )
-    monkeypatch.setattr(
-        cli.token_store,
-        "load_tokens",
-        lambda: {"access_token": token, "refresh_token": "x"},
-    )
-
-    assert cli._usuario_logado() == "cronista"
-
-
-def test_usuario_logado_token_corrompido_nao_quebra(monkeypatch):
-    monkeypatch.setattr(
-        cli.token_store,
-        "load_tokens",
-        lambda: {"access_token": "isso-nao-e-um-jwt", "refresh_token": "x"},
-    )
-
-    assert cli._usuario_logado() == "autenticado"
-
-
 def test_tela_mostra_usuario_e_maquina(monkeypatch, tmp_path):
     monkeypatch.setattr(cli._settings, "data_root", str(tmp_path))
-    monkeypatch.setattr(cli, "_usuario_logado", lambda: "cronista")
-    monkeypatch.setattr(cli.socket, "gethostname", lambda: "maquina-de-teste")
+    monkeypatch.setattr(session_info, "usuario_logado", lambda: "cronista")
+    monkeypatch.setattr(session_info.socket, "gethostname", lambda: "maquina-de-teste")
 
     result = runner.invoke(cli.app, [])
 

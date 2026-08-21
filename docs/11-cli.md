@@ -1,6 +1,6 @@
 # Linha de Comando · Contrato
 
-> **Versão:** 1.3 · **Última atualização:** 2026-08-17
+> **Versão:** 1.4 · **Última atualização:** 2026-08-19
 > Decisões correspondentes: [0006](adr/0006-cli-antes-de-desktop.md), [0015](adr/0015-rich-como-apresentacao-cli.md), [0016](adr/0016-textual-para-navegacao.md)
 
 ## 1. Papel
@@ -10,6 +10,8 @@ A linha de comando é a primeira interface, e serve de contrato para a interface
 O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 
 **O CLI tem dois modelos de interação, não um só (ADR-0016).** A maioria dos comandos roda e termina — decorados com Rich (ADR-0015). `list`, `ler` e `buscar` convergem numa experiência navegável e persistente com Textual, porque o usuário pediu explicitamente poder navegar pelo acervo, ler transcrição trocando de aba e percorrer busca sem comando novo a cada passo. `rec` **fica de fora dessa navegação** de propósito — é a única operação irreversível do sistema (ADR-0012), e misturar isso com loop de evento foi exatamente o que o ADR-0006 evitou desde o início.
+
+**`cronista` sem nenhum comando abre um menu inicial navegável** (ADR-0016, seção "segunda tentativa, funcionou"): banner + info de sessão, lista de comandos escolhida por seta. É Textual, mas só como seletor — ao escolher um item, o menu termina antes do comando escolhido rodar, exatamente como se o usuário tivesse digitado `cronista <comando>` direto. `rec` continua fora de qualquer loop de evento mesmo quando escolhido pelo menu. Fora de terminal interativo (script, pipe, CI), cai no mesmo conteúdo em texto estático — o menu não tenta abrir sem TTY.
 
 ## 2. Comandos
 

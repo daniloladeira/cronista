@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import socket
 import threading
-import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-import jwt
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -16,11 +14,12 @@ from rich.text import Text
 
 from cronista.client import (
     api_client,
-    banner,
     capture,
+    home,
     naming,
     reconciliation,
     registration,
+    session_info,
     signal_bar,
     token_store,
 )
@@ -32,44 +31,17 @@ app = typer.Typer(add_completion=False)
 _console = Console()
 _settings = ClientSettings()
 
-_SUBTITLE_COLOR = "#F7ECDA"  # dourado bem claro
-_MINIMAL_COLOR = "#A6A6A6"  # neutro, mesmo tom de "outros" (signal_bar.py)
-_SUBTITLE = "Grava, transcreve e resume reuniões localmente."
-_CATEGORIAS = "transcreva reuniões · resumos automáticos · anotações"
 _COMANDOS_MINIMOS = [("r", "rec"), ("d", "devices"), ("s", "sync"), ("l", "login")]
 
 
-def _usuario_logado() -> str:
-    """Decodifica o `sub` do access token só pra exibir -- sem verificar
-    assinatura, porque não faz sentido validar aqui: o cliente nunca tem
-    o JWT_SECRET (ClientSettings é deliberadamente restrito, ver
-    core/config.py), e a API já vai recusar o token na próxima chamada
-    de rede se ele for inválido de verdade. Isto é só cosmético."""
-    tokens = token_store.load_tokens()
-    if tokens is None:
-        return "não autenticado"
-    try:
-        payload = jwt.decode(tokens["access_token"], options={"verify_signature": False})
-        return str(payload.get("sub", "autenticado"))
-    except jwt.PyJWTError:
-        return "autenticado"
-
-
 def _tela_inicial_partes() -> list[Text]:
-    # `cronista` sem comando: banner de abertura toda vez (docs/17
-    # §3, §7) -- não é mais throttle de uma vez por dia, já que agora é
-    # tela alternativa (some ao sair, sem poluir o histórico) em vez de
-    # imprimir e ficar no scrollback. Resumo mínimo embaixo, não a tabela
-    # de ajuda do Typer (`--help` explícito continua completo).
-    partes: list[Text] = [Text(), banner.render(_console), Text()]
-    partes.append(Text(_SUBTITLE, style=f"bold {_SUBTITLE_COLOR}"))
-    partes.append(Text())
-    partes.append(Text(_CATEGORIAS, style=_MINIMAL_COLOR))
-    partes.append(Text())
-    partes.append(Text(f"{_usuario_logado()} · {socket.gethostname()}", style=_MINIMAL_COLOR))
+    # `cronista` sem comando, fora de terminal interativo: mesmo conteúdo
+    # do menu navegável (home.py), só que estático -- não tem quem
+    # aperte seta/Enter num script ou pipe.
+    partes = session_info.partes(_console)
     partes.append(Text())
     comandos = "    ".join(f"{letra} - {nome}" for letra, nome in _COMANDOS_MINIMOS)
-    partes.append(Text(comandos, style=_MINIMAL_COLOR))
+    partes.append(Text(comandos, style=session_info.MINIMAL_COLOR))
     return partes
 
 
@@ -91,29 +63,30 @@ def _callback(ctx: typer.Context) -> None:
     if ctx.invoked_subcommand is not None:
         return
     if not _console.is_terminal:
-        # Script, pipe, CI: sem terminal de verdade não tem quem aperte
-        # Ctrl+C, e a tela alternativa não faz sentido nenhum aqui —
-        # imprime uma vez e sai, como sempre foi nesse caso.
+        # Script, pipe, CI: sem terminal de verdade não tem quem navegue
+        # um menu Textual -- imprime uma vez e sai, como sempre foi.
         _render_tela_inicial()
         return
-    # Tela alternativa, igual ao `rec` (Live(..., screen=True)) -- some
-    # ao sair, sem deixar rastro no histórico de rolagem. Ctrl+C é o
-    # único jeito de sair, de propósito: nada pra navegar aqui.
-    with _console.screen():
-        _render_tela_inicial()
-        try:
-            while True:
-                time.sleep(0.1)
-        except KeyboardInterrupt:
-            pass
+    # Menu navegável (ADR-0016, seção "Extensão"). É só um seletor: sai
+    # completamente (self.exit) antes do comando escolhido rodar --
+    # nenhum comando roda dentro dele, `rec` continua fora de qualquer
+    # loop de evento (ADR-0006).
+    chosen = home.HomeApp().run()
+    if chosen is None:
+        return  # Escape/q: usuário saiu sem escolher nada
+    if chosen == "rec":
+        rec()
+    elif chosen == "devices":
+        devices()
+    elif chosen == "sync":
+        sync()
+    elif chosen == "login":
+        usuario = typer.prompt("Usuario")
+        senha = typer.prompt("Senha", hide_input=True)
+        _do_login(usuario, senha)
 
 
-@app.command()
-def login(
-    usuario: str = typer.Option(..., prompt=True),
-    senha: str = typer.Option(..., prompt=True, hide_input=True),
-) -> None:
-    """Autentica e guarda os tokens localmente (UC-01)."""
+def _do_login(usuario: str, senha: str) -> None:
     try:
         tokens = api_client.login(usuario, senha)
     except api_client.ApiError as exc:
@@ -122,6 +95,15 @@ def login(
 
     token_store.save_tokens(tokens["access_token"], tokens["refresh_token"])
     typer.echo("Login realizado. Token salvo.")
+
+
+@app.command()
+def login(
+    usuario: str = typer.Option(..., prompt=True),
+    senha: str = typer.Option(..., prompt=True, hide_input=True),
+) -> None:
+    """Autentica e guarda os tokens localmente (UC-01)."""
+    _do_login(usuario, senha)
 
 
 @app.command()

@@ -46,3 +46,12 @@ Esta decisão é de escopo (Fase 5 — Busca e leitura, UC-07/UC-08), registrada
 ## Nota (2026-08-18)
 
 Uma tentativa de estender este ADR pro menu inicial (`cronista` sem comando ficar navegável, Textual) foi implementada e revertida no mesmo dia — o resultado visual não ficou bom (testado de verdade, não só decidido em teoria) e foi descartado antes de virar commit. `cronista` sem comando continua mostrando o banner (docs/17 §7) seguido da ajuda do Typer, como já era. Fica registrado que a ideia foi tentada e por quê não vingou desta vez, caso volte à mesa: a lição foi entregar um preview de verdade (screenshot/export) antes de ligar qualquer coisa nova ao CLI real, não só descrever em texto.
+
+## Nota (2026-08-19): segunda tentativa, funcionou
+
+O menu inicial navegável (`cronista/client/home.py`, `HomeApp`) foi refeito e desta vez ficou de pé. A diferença: preview de verdade antes de integrar, via `App.export_screenshot()` do próprio Textual (SVG, comparado linha por linha por script, não só olhado por cima) — não uma captura de tela manual pedida ao usuário. Dois bugs reais foram achados e corrigidos **antes** de qualquer coisa chegar no `cli.py`:
+
+1. **Banner cortado no meio de cada linha.** O `Static` não reservava largura suficiente pra uma `Text` de 63+ caracteres com quebras de linha internas; `width: auto` do Textual não mede direito esse caso. Corrigido com `no_wrap=True` + `overflow="ignore"` na `Text` do banner e uma largura explícita no `Static` (`banner.width() + 2`).
+2. **Fundo preto (`#121212`) onde antes não tinha nenhum.** Era o tema escuro padrão do Textual, que pinta a tela inteira — diferente do resto do app, que só imprime, sem fundo próprio. Corrigido com `App(ansi_color=True)`, que usa a paleta/fundo do terminal real em vez do tema fixo.
+
+`session_info.py` foi extraído pra conteúdo (banner, subtítulo, categorias, usuário/máquina) compartilhado entre o menu navegável e o fallback estático (fora de terminal interativo) — as duas telas mostram o mesmo texto, só a lista de comandos embaixo muda de forma.
