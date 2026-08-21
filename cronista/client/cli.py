@@ -75,7 +75,10 @@ def _callback(ctx: typer.Context) -> None:
     if chosen is None:
         return  # Escape/q: usuário saiu sem escolher nada
     if chosen == "rec":
-        rec()
+        # rec() chamado direto (fora do Click) não resolve os defaults de
+        # typer.Option pra None sozinho -- precisa passar explícito, senão
+        # capture.get_input_device recebe o próprio objeto OptionInfo.
+        rec(titulo=None, mic=None, saida=None)
     elif chosen == "devices":
         devices()
     elif chosen == "sync":

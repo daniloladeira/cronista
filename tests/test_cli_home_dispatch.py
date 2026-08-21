@@ -65,7 +65,12 @@ def test_menu_escolhendo_rec_chama_o_comando_rec(monkeypatch):
 
     cli._callback(MagicMock(invoked_subcommand=None))
 
-    fake_rec.assert_called_once()
+    # Regressão: rec() chamado fora do Click não resolve typer.Option(None,
+    # ...) pra None sozinho -- precisa vir explícito no dispatch, senão
+    # capture.get_input_device recebe o objeto OptionInfo cru (bug real,
+    # reproduzido pelo usuário: "Dispositivo de entrada '<typer.models.
+    # OptionInfo object...>' não encontrado").
+    fake_rec.assert_called_once_with(titulo=None, mic=None, saida=None)
 
 
 def test_menu_escolhendo_sync_chama_o_comando_sync(monkeypatch):
