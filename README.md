@@ -108,6 +108,12 @@ wsl
 
 A distro sobe, o systemd inicia o Docker e os containers voltam sozinhos (`restart: unless-stopped`). O `docker compose up -d` só é necessário na primeira vez.
 
+**A API não está no compose** — sobe à parte:
+
+```bash
+uvicorn cronista.api.main:app --host 127.0.0.1 --port 8000
+```
+
 Para derrubar tudo: `wsl --shutdown`.
 
 **Esquecer de subir não custa uma reunião.** Gravar não depende de API, banco nem WSL. O áudio vai para o disco e o registro se completa depois, com `cronista sync`. É exatamente o cenário que motivou o [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md): ninguém confere container antes de entrar numa reunião.
