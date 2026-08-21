@@ -54,6 +54,8 @@ Worker em processo separado, consumindo a fila do banco. Detecção de fala, tra
 
 **O risco que sobra é outro, e é medível:** o container lê o áudio atravessando a fronteira 9P entre WSL e Windows, o que é mais lento que leitura local. Se comprometer RNF-P01, a saída é copiar a trilha para dentro do WSL antes de processar. **CT-16 responde isso com número, não com suposição.**
 
+**CT-16 medido em 2026-08-21, com reunião real: passou com folga larga.** Reunião de 59min39s (duas trilhas, `voce` e `outros`), gravada e reprocessada pelo pipeline completo (`cronista rec` → API → fila → `cronista-worker` em container com GPU). Do momento em que o worker reivindicou a reunião (checagem do modelo no Hugging Face) até o modelo voltar a ficar ocioso: **~2min26s**, medido pelos timestamps do log do worker (claim às 12:02:34, última atividade do modelo entre 12:04:58 e 12:05:04, inferido do log de descarregamento por ociosidade 300s depois). Ou seja, ~24x mais rápido que tempo real — a fronteira 9P WSL↔Windows não se mostrou um gargalo relevante nessa medição; a cópia pro WSL cogitada como saída de contingência não foi necessária. 1069 segmentos persistidos (924 `outros`, 145 `voce`), cobrindo a reunião inteira (`max(end_ms)` bate com a duração do áudio) e intercalados em ordem cronológica correta — confirma CT-17 também, além da cobertura já existente em teste unitário. **Falta só a linha de base de WER (CT-36)**: o áudio usado nesta medição não era uma conversa real (era música tocada/cantada, útil pra medir tempo mas não pra WER com vocabulário de domínio), então a transcrição de referência feita à mão ainda precisa de uma reunião real de fato.
+
 ### Fase 4 · Resumo
 
 Cadeia LangChain com Ollama local, provedor remoto opcional, prompts versionados, tratamento de transcrição longa.
@@ -61,6 +63,8 @@ Cadeia LangChain com Ollama local, provedor remoto opcional, prompts versionados
 **Pronto quando:** uma reunião real produz resumo com as quatro seções e responsável nas pendências, e a **rubrica comparativa contra o Notion AI está preenchida**.
 
 **Esta é a fase que responde se o projeto valeu a pena.** Até aqui, o sistema faz o que outros já fazem. É o resumo em português com vocabulário de domínio que sustenta a decisão de construir em vez de instalar o pronto.
+
+**Ideia registrada, não decidida ainda:** título gerado por IA a partir do conteúdo da reunião, substituindo o padrão `"Reunião {data} {hora}"` de hoje (docs/11-cli.md §3). Levantada em 2026-08-19 — a pergunta original também questionava se a *pasta* em disco deveria esperar esse nome antes de ser criada, mas isso não é viável: `cronista rec` cria a pasta no início da gravação, antes de existir qualquer conteúdo pra uma IA analisar, e gravação é irreversível (ADR-0006/ADR-0012), não dá pra adiar a escrita do áudio. O caminho mais provável, a decidir quando esta fase chegar: a pasta em disco continua nascendo por data/hora, estável; o título "bonito" vira só o campo `title` no banco, atualizado depois do resumo, sem renomear diretório físico.
 
 ### Fase 5 · Consulta e busca
 
