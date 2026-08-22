@@ -16,11 +16,13 @@ class ApiError(Exception):
         self.status_code = status_code
 
 
-def _post(path: str, json_body: dict, access_token: str | None = None) -> httpx2.Response:
+def _post(
+    path: str, json_body: dict, access_token: str | None = None, timeout: float = 10.0
+) -> httpx2.Response:
     headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
     try:
         return httpx2.post(
-            f"{settings.api_base_url}{path}", json=json_body, headers=headers, timeout=10.0
+            f"{settings.api_base_url}{path}", json=json_body, headers=headers, timeout=timeout
         )
     except httpx2.ConnectError as exc:
         raise ApiError(
@@ -51,18 +53,18 @@ def refresh(refresh_token: str) -> str:
     return resp.json()["access_token"]
 
 
-def _authed_post(path: str, json_body: dict) -> dict:
+def _authed_post(path: str, json_body: dict, timeout: float = 10.0) -> dict:
     """POST autenticado com renovação silenciosa (docs/11-cli.md §3): um
     401 tenta `refresh` uma vez antes de desistir, sem pedir senha de novo."""
     tokens = token_store.load_tokens()
     if tokens is None:
         raise ApiError("Não autenticado. Rode `cronista login`.", status_code=401)
 
-    resp = _post(path, json_body, tokens["access_token"])
+    resp = _post(path, json_body, tokens["access_token"], timeout=timeout)
     if resp.status_code == 401:
         new_access_token = refresh(tokens["refresh_token"])
         token_store.save_tokens(new_access_token, tokens["refresh_token"])
-        resp = _post(path, json_body, new_access_token)
+        resp = _post(path, json_body, new_access_token, timeout=timeout)
 
     _raise_for_status(resp)
     return resp.json()
@@ -79,3 +81,13 @@ def register_track(meeting_id: object, payload: dict) -> dict:
 def reprocessar(meeting_id: object) -> dict:
     """UC-05, RF-15 (docs/12-transcricao.md §10)."""
     return _authed_post(f"/meetings/{meeting_id}/transcribe", {})
+
+
+def resumir(meeting_id: object) -> dict:
+    """UC-06, RF-16 (docs/13-resumo.md). Bloqueia até o provedor
+    responder -- não é fila como /transcribe, por isso o timeout é bem
+    maior que o padrão (10s mal dá tempo de um LLM local começar a gerar
+    um resumo de reunião real). Valor de "tempo limite" ainda não medido
+    contra Ollama de verdade (docs/13 §7) -- 300s é uma folga generosa
+    provisória, não uma medição."""
+    return _authed_post(f"/meetings/{meeting_id}/summarize", {}, timeout=300.0)

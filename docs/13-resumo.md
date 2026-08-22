@@ -1,6 +1,6 @@
 # Resumo · Contrato
 
-> **Versão:** 1.1 · **Última atualização:** 2026-08-22
+> **Versão:** 1.2 · **Última atualização:** 2026-08-22
 > Decisão correspondente: [0005](adr/0005-langchain-na-camada-de-resumo.md)
 
 ## 1. Papel
@@ -43,7 +43,7 @@ A camada usa **LangChain**, com as integrações de cada provedor.
 
 Consequência prática já prevista: se as dependências conflitarem com `ctranslate2`, o worker de transcrição ganha ambiente próprio, o que a arquitetura de processos separados já deixa barato ([07-arquitetura.md](07-arquitetura.md) §7).
 
-> **Status: implementado, etapa 1** (`cronista/api/summarize.py`, função `summarize()`). Escolha de provedor por `ChatOllama`/`ChatAnthropic` do LangChain, com `provider` sobrepondo `Settings.llm_provider` por execução (RF-18). Testado com `BaseChatModel` mockado (`tests/test_summarize.py`) — cobre as quatro seções, não sobrescrita (RN-03), resposta malformada e provedor indisponível (§7), e a transição de estado `summary_failed` → elegível de novo (`Meeting.is_summarizable()` em `cronista/core/models.py`). **Ainda não validado contra Ollama real** nem exposto por endpoint ou CLI — isso é a próxima etapa (docs/15-roadmap.md, Fase 4).
+> **Status: implementado, etapas 1-2** (`cronista/api/summarize.py`, função `summarize()`). Escolha de provedor por `ChatOllama`/`ChatAnthropic` do LangChain, com `provider` sobrepondo `Settings.llm_provider` por execução (RF-18). Testado com `BaseChatModel` mockado (`tests/test_summarize.py`) — cobre as quatro seções, não sobrescrita (RN-03), resposta malformada e provedor indisponível (§7), e a transição de estado `summary_failed` → elegível de novo (`Meeting.is_summarizable()` em `cronista/core/models.py`). **Endpoint e CLI ligados** (`POST /meetings/{id}/summarize` em `cronista/api/routes/meetings.py`, `cronista resumir <id>` em `cronista/client/cli.py`), com `503` para provedor indisponível/resposta malformada e timeout do cliente estendido pra 300s (uma chamada de LLM real não cabe nos 10s padrão dos outros endpoints). **Ainda não validado contra Ollama real** — isso é a próxima etapa (docs/15-roadmap.md, Fase 4).
 
 ## 5. Transcrições longas
 

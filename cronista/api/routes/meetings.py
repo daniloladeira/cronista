@@ -12,10 +12,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
+from cronista.api import summarize
 from cronista.api.security import require_access_token
 from cronista.core.config import RECORDINGS_DIRNAME, Settings
 from cronista.core.db import get_db
-from cronista.core.models import Meeting, Track
+from cronista.core.models import Meeting, Summary, Track
 
 router = APIRouter(
     prefix="/meetings",
@@ -84,6 +85,18 @@ class TrackOut(BaseModel):
     duration_ms: int | None
     size_bytes: int | None
     device: str | None
+
+
+class SummaryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    meeting_id: UUID
+    provider: str
+    model: str
+    prompt_version: str
+    markdown: str
+    generated_at: datetime
 
 
 @router.post("", response_model=MeetingOut, status_code=status.HTTP_201_CREATED)
@@ -197,3 +210,24 @@ def reprocess_meeting(meeting_id: UUID, db: Session = Depends(get_db)) -> Meetin
     db.commit()
     db.refresh(meeting)
     return meeting
+
+
+@router.post("/{meeting_id}/summarize", response_model=SummaryOut)
+def summarize_meeting(meeting_id: UUID, db: Session = Depends(get_db)) -> Summary:
+    """Gera um novo resumo (UC-06, RF-16, docs/13-resumo.md). Ao contrário
+    de /transcribe, não recoloca numa fila -- bloqueia até o provedor
+    responder (docs/09-api.md §5)."""
+    meeting = db.get(Meeting, meeting_id)
+    if meeting is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reunião não encontrada.")
+
+    if not meeting.is_summarizable():
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Reunião em '{meeting.status}' não pode ser resumida agora.",
+        )
+
+    try:
+        return summarize.summarize(db, meeting, _settings)
+    except (summarize.ProviderUnavailable, summarize.RespostaMalformada) as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc

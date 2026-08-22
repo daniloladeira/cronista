@@ -125,6 +125,22 @@ def reprocessar(meeting_id: str = typer.Argument(..., help="ID da reunião")) ->
     typer.echo("Reunião marcada para reprocessamento — o worker pega na próxima passada.")
 
 
+@app.command()
+def resumir(meeting_id: str = typer.Argument(..., help="ID da reunião")) -> None:
+    """Gera um novo resumo (UC-06, RF-16). Bloqueia até o provedor responder."""
+    try:
+        resultado = api_client.resumir(meeting_id)
+    except api_client.ApiError as exc:
+        typer.echo(f"Erro: {exc}", err=True)
+        if exc.status_code == 404:
+            raise typer.Exit(code=1)
+        if exc.status_code == 409:
+            raise typer.Exit(code=5)
+        raise typer.Exit(code=2 if exc.status_code == 401 else 3)
+
+    typer.echo(resultado["markdown"])
+
+
 def _report_reconciliation(resultado: ReconcileResult) -> None:
     if resultado["reconciliadas"]:
         typer.echo(f"{resultado['reconciliadas']} reunião(ões) pendente(s) reconciliada(s).")
