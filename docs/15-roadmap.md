@@ -66,6 +66,17 @@ Cadeia LangChain com Ollama local, provedor remoto opcional, prompts versionados
 
 **Esta é a fase que responde se o projeto valeu a pena.** Até aqui, o sistema faz o que outros já fazem. É o resumo em português com vocabulário de domínio que sustenta a decisão de construir em vez de instalar o pronto.
 
+**Etapas 1-5 implementadas e auditadas contra CT-21 a CT-24 em 2026-08-22** ([docs/14-plano-de-testes.md](14-plano-de-testes.md) §3.4):
+
+| ID | Status |
+|---|---|
+| CT-21 (4 seções + responsável) | ✅ Validado com transcrição sintética contra Ollama real (`llama3.1:8b`), depois de 3 rodadas de prompt (v1→v3, docs/13 §4) |
+| CT-22 (transcrição maior que a janela) | ✅ Mecanismo de blocos + consolidação (RF-17) testado e validado contra Ollama real; qualidade da consolidação em fragmentação extrema tem ressalva registrada (docs/13 §5) |
+| CT-23 (provedor fora do ar, mensagem acionável) | ✅ Corrigido na auditoria — a mensagem só nomeava o provedor, não dizia como iniciá-lo; agora inclui (`ollama serve`, checar `ANTHROPIC_API_KEY`) |
+| CT-24 (nunca sobrescreve) | ✅ Testado (RN-03) |
+
+**O que falta pro "pronto quando" desta fase: uma reunião REAL, não sintética, resumida bem, e a rubrica comparativa (CT-37).** Toda a validação com Ollama até aqui usou transcrição sintética (fictícia, tom de reunião normal) — a única reunião real disponível (a do CT-16/36) foi recusada pelo próprio modelo por causa do áudio misturado com YouTube (mesmo bloqueio de material que já afetava o CT-36). Isso não invalida a implementação nem os testes, mas significa que **o critério de "pronto" da Fase 4 continua em aberto** até existir uma reunião real de domínio pra medir contra — exatamente o mesmo tipo de bloqueio que o CT-36 teve na Fase 3.
+
 **Ideia registrada, não decidida ainda:** título gerado por IA a partir do conteúdo da reunião, substituindo o padrão `"Reunião {data} {hora}"` de hoje (docs/11-cli.md §3). Levantada em 2026-08-19 — a pergunta original também questionava se a *pasta* em disco deveria esperar esse nome antes de ser criada, mas isso não é viável: `cronista rec` cria a pasta no início da gravação, antes de existir qualquer conteúdo pra uma IA analisar, e gravação é irreversível (ADR-0006/ADR-0012), não dá pra adiar a escrita do áudio. O caminho mais provável, a decidir quando esta fase chegar: a pasta em disco continua nascendo por data/hora, estável; o título "bonito" vira só o campo `title` no banco, atualizado depois do resumo, sem renomear diretório físico.
 
 ### Fase 5 · Consulta e busca

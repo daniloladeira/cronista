@@ -156,6 +156,15 @@ def _dividir_em_blocos(
     return blocos
 
 
+# CT-23, docs/13-resumo.md §7 / docs/11-cli.md §5: a mensagem tem que dizer
+# de quem é a falha E o que fazer, não só nomear o provedor.
+_DICA_PROVEDOR = {
+    "ollama": "verifique se o Ollama está rodando (`ollama serve`) e se o "
+    "modelo foi baixado (`ollama pull <modelo>`)",
+    "anthropic": "verifique ANTHROPIC_API_KEY no .env e a conexão de rede",
+}
+
+
 def _invocar(modelo: BaseChatModel, prompt_sistema: str, texto: str, provider: str) -> str:
     try:
         # Exceção ampla de propósito: cada provedor levanta um tipo
@@ -168,7 +177,8 @@ def _invocar(modelo: BaseChatModel, prompt_sistema: str, texto: str, provider: s
             [SystemMessage(content=prompt_sistema), HumanMessage(content=texto)]
         )
     except Exception as exc:
-        raise ProviderUnavailable(f"{provider} não respondeu: {exc}") from exc
+        dica = _DICA_PROVEDOR.get(provider, "verifique a configuração do provedor")
+        raise ProviderUnavailable(f"{provider} não respondeu ({exc}) -- {dica}.") from exc
     return str(resposta.content)
 
 

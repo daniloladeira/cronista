@@ -189,11 +189,14 @@ def test_summarize_provedor_indisponivel_marca_falha_sem_persistir(
     meeting = _com_segmentos(db_session, _meeting())
     monkeypatch.setattr(summarize, "_modelo", lambda settings, provider: _ModeloQueFalha())
 
-    with pytest.raises(summarize.ProviderUnavailable):
+    with pytest.raises(summarize.ProviderUnavailable) as exc_info:
         summarize.summarize(db_session, meeting, _settings())
 
     assert meeting.status == "summary_failed"
     assert meeting.summaries == []
+    # CT-23, docs/13 §7: mensagem diz de quem é a falha e o que fazer,
+    # não só que "não respondeu".
+    assert "ollama serve" in str(exc_info.value)
 
 
 def test_summarize_aceita_provider_explicito_sobrepondo_configuracao(
