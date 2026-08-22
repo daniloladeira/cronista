@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from cronista.core.config import Settings
 from cronista.core.models import Meeting, Summary
 
-PROMPT_VERSION = "v2"
+PROMPT_VERSION = "v3"
 
 _SECOES = ("Pauta", "Decisões", "Pendências", "Pontos em aberto")
 
@@ -30,17 +30,29 @@ Assuntos tratados, na ordem em que apareceram. Só os temas discutidos -- \
 não repita aqui decisões nem pendências, que têm seções próprias.
 
 ## Decisões
-O que o grupo decidiu ou concordou coletivamente, com quem decidiu quando \
-isso for identificável na transcrição.
+Algo que o grupo resolveu ou concordou, mas que **não** gera uma ação \
+futura de alguém específico -- por exemplo, escolher uma opção entre \
+várias, aprovar um formato, encerrar uma discussão. Se a frase tem \
+"eu vou fazer X" ou "fulano fica responsável por X", isso é Pendência, \
+não Decisão -- não repita aqui.
 
 ## Pendências
-Ações combinadas -- qualquer compromisso que alguém assumiu de fazer \
-depois da reunião. Cada uma precisa indicar o responsável. Atenção: \
-quando alguém fala na primeira pessoa ("eu fico responsável", "eu vou \
-fazer", "fico com isso"), o responsável é quem está falando naquele \
-trecho da transcrição -- não escreva que "não ficou claro quem é" \
-nesse caso. Só diga isso se a transcrição de fato não permitir \
-identificar ninguém.
+Toda ação que alguém assumiu de fazer depois da reunião -- **procure \
+isso primeiro**, antes de decidir o que vai em Decisões. Frases como \
+"eu fico responsável", "eu vou fazer", "fico com isso", "fulano ficou \
+de fazer X" são sempre Pendência, nunca Decisão, mesmo que soem como \
+uma decisão do grupo. Cada uma precisa indicar o responsável: quando \
+alguém fala na primeira pessoa, o responsável é quem está falando \
+naquele trecho da transcrição -- nunca escreva "não ficou claro quem \
+é" nesse caso, só quando a transcrição de fato não permitir identificar \
+ninguém.
+
+Exemplo (não faz parte da reunião real, é só pra ilustrar a diferença):
+transcrição: "voce: fechado, então já era a decisão de manter Postgres.
+outros: combinado, e eu fico responsável por atualizar o schema até
+quinta." --
+Decisões: manter Postgres como banco.
+Pendências: outros -- atualizar o schema até quinta-feira.
 
 ## Pontos em aberto
 O que foi levantado e não chegou a se resolver.
