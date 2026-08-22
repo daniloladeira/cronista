@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from cronista.core.config import Settings
 from cronista.core.models import Meeting, Summary
 
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 
 _SECOES = ("Pauta", "Decisões", "Pendências", "Pontos em aberto")
 
@@ -26,15 +26,21 @@ Markdown com exatamente estas quatro seções, nesta ordem, cada uma com o \
 título em nível 2 (##):
 
 ## Pauta
-Assuntos tratados, na ordem em que apareceram.
+Assuntos tratados, na ordem em que apareceram. Só os temas discutidos -- \
+não repita aqui decisões nem pendências, que têm seções próprias.
 
 ## Decisões
-O que foi decidido, com quem decidiu quando isso for identificável na transcrição.
+O que o grupo decidiu ou concordou coletivamente, com quem decidiu quando \
+isso for identificável na transcrição.
 
 ## Pendências
-Ações combinadas. Cada uma precisa indicar o responsável (a pessoa que \
-ficou de fazer). Se a transcrição não deixar isso claro para uma \
-pendência, diga isso explicitamente em vez de inventar um nome.
+Ações combinadas -- qualquer compromisso que alguém assumiu de fazer \
+depois da reunião. Cada uma precisa indicar o responsável. Atenção: \
+quando alguém fala na primeira pessoa ("eu fico responsável", "eu vou \
+fazer", "fico com isso"), o responsável é quem está falando naquele \
+trecho da transcrição -- não escreva que "não ficou claro quem é" \
+nesse caso. Só diga isso se a transcrição de fato não permitir \
+identificar ninguém.
 
 ## Pontos em aberto
 O que foi levantado e não chegou a se resolver.
