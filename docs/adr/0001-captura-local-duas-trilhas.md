@@ -31,3 +31,7 @@ Gravar **duas trilhas independentes** (microfone e loopback da saída) a 16 kHz 
 ## Gatilho de reversão
 
 Se for necessário identificar participantes **nominalmente** dentro da trilha `outros`, ou se o projeto precisar rodar onde não haja loopback disponível. Nesses casos, diarização volta à mesa, mas como acréscimo à separação por trilha, não como substituição.
+
+## Nota (2026-08-22)
+
+O gatilho acima deixou de ser hipotético. Medindo CT-36 com uma reunião real de mais de duas pessoas, ficou claro que `outros` mistura todo mundo que não é o usuário — saber **quantas pessoas** tem na call, não só que existe um "outros", é uma spec real pro futuro. Registrado aqui, não implementado: quando isso for decidido, diarização entra como acréscimo dentro de `outros`, como o gatilho original já previa, não como substituição da separação por trilha.

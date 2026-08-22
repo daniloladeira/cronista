@@ -13,6 +13,10 @@ __pycache__/
 recordings/
 pending.json
 
+# Material de trabalho do CT-36 (docs/14-plano-de-testes.md §4) — exports
+# derivados do banco, regeneráveis, não precisam ficar versionados
+ct36/
+
 # Modelos baixados
 *.bin
 *.onnx
