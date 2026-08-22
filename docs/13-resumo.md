@@ -1,6 +1,6 @@
 # Resumo · Contrato
 
-> **Versão:** 1.4 · **Última atualização:** 2026-08-22
+> **Versão:** 1.5 · **Última atualização:** 2026-08-22
 > Decisão correspondente: [0005](adr/0005-langchain-na-camada-de-resumo.md)
 
 ## 1. Papel
@@ -51,7 +51,9 @@ Consequência prática já prevista: se as dependências conflitarem com `ctrans
 > - **v2** (instrução explícita sobre primeira pessoa e a diferença Decisão/Pendência): melhorou o reconhecimento de "eu" como o falante, mas Pendências continuou vazio.
 > - **v3** (mesma instrução + um exemplo de poucas linhas embutido no prompt, mostrando a diferença Decisão/Pendência num caso concreto): **corrigiu** — Pendências passou a sair certo, com os dois responsáveis corretamente identificados. Ficou um resíduo menor: Decisões às vezes inclui uma frase inferida que não foi dita desse jeito na transcrição (não é fabricação de fato, é excesso de síntese) — não bloqueante, registrado pra acompanhar quando houver reunião real pra medir (CT-37).
 >
-> `PROMPT_VERSION` está em v3. Modelo (`llama3.1:8b`) segue como primeiro candidato, não uma escolha final — comparação com outros modelos fica pra quando houver reunião real de domínio (CT-37), mesmo bloqueio do CT-36.
+> **v4** (2026-08-22, medido contra a primeira reunião real de domínio disponível — migração de dados clínicos do iClinic, ~21 mil caracteres, forçou o caminho de blocos do RF-17 em escala real): reforçou "Decisões" pra reconhecer o padrão pergunta→explicação→concordância, não só "decidimos X" explícito, e adicionou instrução redobrada sobre preservar negação. Corrigiu a inversão do financeiro (antes dizia "importar", correto agora é "não importar") e tirou "Decisões" do vazio — mas a decisão sobre agenda sumiu inteira na consolidação (antes aparecia invertida, agora nem aparece), e duas decisões vieram com justificativa que a transcrição não sustenta. Detalhe completo em [15-roadmap.md](15-roadmap.md), Fase 4.
+>
+> `PROMPT_VERSION` está em v4. Modelo (`llama3.1:8b`) segue como primeiro candidato, não uma escolha final — três rodadas de ajuste em cima da mesma reunião real cada uma resolveu um problema e revelou outro, sinal de estar perto do limite do que um modelo de 8B parâmetros faz de forma confiável nessa tarefa. Comparação com outros modelos e a rubrica comparativa (CT-37) seguem pendentes.
 
 > **Status: implementado, etapa 4** (`cronista/api/summarize.py`, `_dividir_em_blocos()` + `_PROMPT_CONSOLIDACAO`). Transcrição maior que `Settings.summary_context_chars` (heurística de caracteres, padrão 12.000 — medido contra o `default_num_ctx=4096` que o Ollama relatou pro `llama3.1:8b` nesta máquina) divide respeitando fronteira de segmento, com sobreposição configurável (`summary_block_overlap_segments`), resume cada bloco com o mesmo prompt principal, e consolida com um prompt dedicado. Testado com mock (blocos corretos, sem perder segmento, sobreposição real, falha em qualquer chamada marca `summary_failed`) e **validado contra Ollama real**: o mecanismo funciona (múltiplas chamadas, consolidação real), mas com um limite artificialmente baixo (200 caracteres, só pra forçar fragmentação extrema num teste manual) a qualidade da consolidação degradou — itens duplicados, um item mal classificado dentro da seção errada. Não é evidência de que o padrão de 12.000 caracteres (blocos bem maiores, poucos por reunião real) tenha o mesmo problema; não foi medido nesse tamanho por falta de reunião real longa disponível. Achado colateral, real: o mesmo teste expôs que a validação de formato aceitava `### Pauta` (nível 3) por engano, porque `"## Pauta"` é substring de `"### Pauta"` — corrigido pra exigir o título exatamente em nível 2 (`tests/test_summarize.py::test_summarize_titulo_em_nivel_errado_e_malformado`).
 

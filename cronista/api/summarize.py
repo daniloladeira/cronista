@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 from cronista.core.config import Settings
 from cronista.core.models import Meeting, Segment, Summary
 
-PROMPT_VERSION = "v3"
+PROMPT_VERSION = "v4"
 
 _SECOES = ("Pauta", "Decisões", "Pendências", "Pontos em aberto")
 
@@ -37,6 +37,22 @@ futura de alguém específico -- por exemplo, escolher uma opção entre \
 várias, aprovar um formato, encerrar uma discussão. Se a frase tem \
 "eu vou fazer X" ou "fulano fica responsável por X", isso é Pendência, \
 não Decisão -- não repita aqui.
+
+**A decisão quase nunca vem como "decidimos X".** Ela normalmente \
+aparece como uma pergunta seguida de uma explicação e depois uma \
+concordância -- alguém pergunta "vale a pena importar isso?", o outro \
+explica que não compensa, e o primeiro responde "beleza, então vamos \
+assim" ou "combinado" ou "concordo, não precisa". Isso **é** uma \
+decisão (nesse exemplo: decidiram não fazer aquilo), mesmo sem a \
+palavra "decidimos". Procure esse padrão de pergunta → explicação → \
+concordância antes de concluir que a seção fica vazia.
+
+**Preste atenção redobrada em negação.** Se a transcrição diz que algo \
+**não** deve ser feito, **não** vale a pena, ou **não** precisa, o \
+resumo tem que preservar essa negação -- nunca escreva o oposto do que \
+foi decidido. "Decidimos não importar X" e "decidimos importar X" são \
+frases opostas; errar isso é o tipo de erro mais grave que este resumo \
+pode cometer.
 
 ## Pendências
 Toda ação que alguém assumiu de fazer depois da reunião -- **procure \
@@ -79,9 +95,13 @@ em outro nível): Pauta, Decisões, Pendências, Pontos em aberto.
 
 Uma decisão ou pendência que aparece em dois pedaços por causa da \
 sobreposição conta só uma vez. Preserve tudo que os pedaços, juntos, \
-registraram -- nada pode se perder por causa da divisão. Se uma seção \
-não tiver conteúdo, escreva-a mesmo assim, com o texto "Nenhum." abaixo \
-do título -- nunca omita a seção. Nunca invente algo que não está em \
+registraram -- nada pode se perder por causa da divisão. **Preste \
+atenção redobrada em negação**: se um pedaço registrou que algo \
+**não** deve ser feito ou **não** vale a pena, a consolidação tem que \
+manter essa negação -- nunca inverta pro oposto ao juntar os pedaços. \
+Se uma seção não tiver conteúdo, escreva-a mesmo assim, com o texto \
+"Nenhum." abaixo do título -- nunca omita a seção. Nunca invente algo \
+que não está em \
 nenhum dos pedaços recebidos."""
 
 
