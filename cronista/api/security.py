@@ -51,6 +51,17 @@ def issue_refresh_token() -> str:
     return _issue_token("refresh", seconds_valid=settings.refresh_token_days * 86400)
 
 
+def issue_service_token(days_valid: int = 3650) -> str:
+    """Token de vida longa pro worker chamar POST /summarize sozinho
+    (docs/07-arquitetura.md §3-4.3, "resumo automático"). Continua tipo
+    "access" de propósito -- valida contra `require_access_token` sem
+    precisar de um tipo de token novo nem mudar nada na dependência do
+    FastAPI. Gerado uma vez com scripts/mint_worker_token.py, guardado
+    como segredo do worker (WORKER_SERVICE_TOKEN), não é login de
+    usuário nem fica preso a uma sessão."""
+    return _issue_token("access", seconds_valid=days_valid * 86400)
+
+
 def _decode(token: str, expected_type: TokenType) -> dict:
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])

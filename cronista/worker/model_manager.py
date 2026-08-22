@@ -80,6 +80,11 @@ class ModelManager:
         self._last_used = time.monotonic()
         return self._model
 
+    def is_loaded(self) -> bool:
+        """Usado pelo gatilho de resumo automático (docs/07-arquitetura.md
+        §3-4.3): só dispara depois que o Whisper está fora da VRAM."""
+        return self._model is not None
+
     def release_if_idle(self) -> bool:
         """Descarrega o modelo se ocioso por `WHISPER_IDLE_UNLOAD_SECONDS`
         (§8) -- libera VRAM pro worker de resumo (ADR-0014). Devolve se

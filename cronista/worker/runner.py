@@ -9,6 +9,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
+import httpx2
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -141,6 +142,42 @@ def run_once(session: Session, model_manager: ModelManager, settings: WorkerSett
     return True
 
 
+def trigger_pending_summaries(session: Session, settings: WorkerSettings) -> None:
+    """Resumo automático (docs/07-arquitetura.md §3-4.3): dispara
+    `POST /summarize` na API pra cada reunião `transcribed` pendente.
+    Chamado só quando a fila de transcrição está vazia e o Whisper não
+    está carregado (`run_forever`), pra não disputar VRAM com o LLM.
+
+    Só pega `transcribed`, nunca `summary_failed` -- retentar sozinho a
+    cada ciclo de poll (a cada `worker_poll_interval_seconds`) bombardearia
+    um provedor fora do ar. Recuperar de `summary_failed` continua sendo
+    `cronista resumir <id>`, pedido explícito do usuário (UC-06).
+
+    Desligado por padrão (`worker_auto_summarize=False` ou sem token) --
+    só roda de verdade quando o operador configurou os dois."""
+    if not settings.worker_auto_summarize or not settings.worker_service_token:
+        return
+
+    pendentes = (
+        session.query(Meeting).filter(Meeting.status == "transcribed").order_by(Meeting.started_at)
+    ).all()
+    for meeting in pendentes:
+        try:
+            resposta = httpx2.post(
+                f"{settings.worker_api_base_url}/meetings/{meeting.id}/summarize",
+                headers={"Authorization": f"Bearer {settings.worker_service_token}"},
+                timeout=300.0,
+            )
+            resposta.raise_for_status()
+            logger.info("Resumo automático gerado pra reunião %s.", meeting.id)
+        except Exception:
+            # Não propaga -- uma reunião com resumo automático falho não
+            # pode travar o loop do worker nem impedir a próxima
+            # transcrição. A API já marca `summary_failed` do lado dela;
+            # aqui só registra, pra quem estiver acompanhando o log ver.
+            logger.exception("Resumo automático falhou pra reunião %s.", meeting.id)
+
+
 def run_forever(
     session_factory: Callable[[], Session],
     settings: WorkerSettings,
@@ -167,4 +204,7 @@ def run_forever(
                     "Modelo descarregado por %ds de ociosidade (docs/12 §8).",
                     settings.whisper_idle_unload_seconds,
                 )
+            if not model_manager.is_loaded():
+                with session_factory() as session:
+                    trigger_pending_summaries(session, settings)
             time.sleep(settings.worker_poll_interval_seconds)

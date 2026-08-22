@@ -63,6 +63,12 @@ services:
       WHISPER_VOCABULARY: ${WHISPER_VOCABULARY}
       WHISPER_FALLBACK_COMPUTE_TYPE: ${WHISPER_FALLBACK_COMPUTE_TYPE}
       WORKER_POLL_INTERVAL_SECONDS: ${WORKER_POLL_INTERVAL_SECONDS}
+      # Resumo automático (docs/07-arquitetura.md §3-4.3). WORKER_API_BASE_URL
+      # não precisa mudar: Docker Desktop resolve host.docker.internal pro
+      # host Windows sem config extra (medido, não presumido).
+      WORKER_AUTO_SUMMARIZE: ${WORKER_AUTO_SUMMARIZE:-false}
+      WORKER_API_BASE_URL: ${WORKER_API_BASE_URL:-http://host.docker.internal:8000/api/v1}
+      WORKER_SERVICE_TOKEN: ${WORKER_SERVICE_TOKEN}
     volumes:
       # Acervo montado somente-leitura. Fica no Windows de propósito:
       # gravar é irreversível, ler é repetível (ADR-0012, ADR-0014).

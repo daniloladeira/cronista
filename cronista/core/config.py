@@ -54,6 +54,17 @@ class WorkerSettings(DatabaseSettings):
     whisper_fallback_compute_type: str
     worker_poll_interval_seconds: int = 5
 
+    # Resumo automático (docs/07-arquitetura.md §3-4.3): só dispara depois
+    # que o Whisper libera a VRAM -- ver ModelManager.is_loaded() em
+    # runner.py. Desligado por padrão (False/vazio) até existir um token
+    # de verdade -- worker→API é uma chamada HTTP normal (Docker Desktop
+    # resolve host.docker.internal pro host Windows sem config extra,
+    # medido, não presumido), autenticada com um token de serviço de
+    # vida longa (scripts/mint_worker_token.py), não com login de usuário.
+    worker_auto_summarize: bool = False
+    worker_api_base_url: str = "http://host.docker.internal:8000/api/v1"
+    worker_service_token: str = ""
+
 
 class Settings(DatabaseSettings):
     """Configuração completa, usada pela API (ADR-0011)."""

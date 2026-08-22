@@ -153,6 +153,15 @@ def test_release_if_idle_sem_modelo_carregado_nao_faz_nada(settings) -> None:
     assert manager.release_if_idle() is False
 
 
+def test_is_loaded_reflete_o_ciclo_de_vida(monkeypatch, settings) -> None:
+    monkeypatch.setattr(mm, "load_model", lambda model, compute_type, **k: object())
+    manager = mm.ModelManager(settings)
+
+    assert manager.is_loaded() is False
+    manager.acquire()
+    assert manager.is_loaded() is True
+
+
 def test_acquire_reinicia_o_relogio_de_ociosidade(monkeypatch, settings) -> None:
     relogio = {"agora": 1000.0}
     monkeypatch.setattr(mm.time, "monotonic", lambda: relogio["agora"])

@@ -1,6 +1,6 @@
 # Arquitetura
 
-> **Versão:** 1.0 · **Última atualização:** 2026-08-12
+> **Versão:** 1.1 · **Última atualização:** 2026-08-22
 > Decisões correspondentes: [0010](adr/0010-api-como-centro.md), [0012](adr/0012-gravacao-em-disco-antes-da-api.md), [0002](adr/0002-faster-whisper-local.md)
 
 ## 1. Princípios
@@ -133,6 +133,8 @@ Duas consequências, ambas obrigatórias:
 
 1. O worker **carrega o modelo sob demanda e o libera após período ocioso**, em vez de mantê-lo residente. Prender 4 a 5 GB permanentemente economizaria cerca de vinte segundos de carregamento e custaria a memória que o resumo precisa.
 2. O resumo automático só dispara **depois** que a transcrição liberou o modelo.
+
+> **Status: implementado** (`cronista/worker/runner.py`, `trigger_pending_summaries()`; `ModelManager.is_loaded()`). O worker, quando a fila de transcrição está vazia **e** o Whisper não está carregado, chama `POST /meetings/{id}/summarize` na API pra cada reunião `transcribed` pendente — nunca `summary_failed`, pra não bombardear um provedor fora do ar a cada ciclo de poll; recuperar disso continua sendo `cronista resumir <id>`, pedido explícito (UC-06). Autenticado com um token de serviço de vida longa (`cronista.api.security.issue_service_token()`, gerado com `scripts/mint_worker_token.py`), não um login de usuário — desligado por padrão até existir token de verdade (`WORKER_AUTO_SUMMARIZE=false`). **Validado de ponta a ponta contra infraestrutura real**: um container na rede do compose alcança a API no host Windows via `host.docker.internal` sem configuração extra (Docker Desktop resolve sozinho), o token minerado autenticou de verdade contra a API rodando, e `trigger_pending_summaries()` processou duas reuniões reais na mesma chamada — uma falhou (503, ficou `summary_failed`, resíduo de teste anterior) sem impedir a outra de terminar `summarized` com um resumo real gerado pelo Ollama.
 
 Configuração e limites em [12-transcricao.md](12-transcricao.md).
 

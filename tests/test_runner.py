@@ -287,3 +287,101 @@ def test_run_once_processa_uma_reuniao_e_devolve_true(
 
     db_session.refresh(meeting)
     assert meeting.status == "transcribed"
+
+
+class _RespostaHttpFalsa:
+    def __init__(self, ok: bool = True) -> None:
+        self._ok = ok
+
+    def raise_for_status(self) -> None:
+        if not self._ok:
+            raise RuntimeError("erro http simulado")
+
+
+def test_trigger_pending_summaries_desligado_por_padrao_nao_chama_api(
+    db_session: Session, worker_settings: WorkerSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    meeting = _meeting(status="transcribed")
+    db_session.add(meeting)
+    db_session.commit()
+    chamadas = []
+    monkeypatch.setattr(runner.httpx2, "post", lambda *a, **k: chamadas.append(1))
+
+    runner.trigger_pending_summaries(db_session, worker_settings)
+
+    assert chamadas == []
+
+
+def test_trigger_pending_summaries_sem_token_nao_chama_mesmo_com_flag_ligada(
+    db_session: Session, worker_settings: WorkerSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = worker_settings.model_copy(update={"worker_auto_summarize": True})
+    meeting = _meeting(status="transcribed")
+    db_session.add(meeting)
+    db_session.commit()
+    chamadas = []
+    monkeypatch.setattr(runner.httpx2, "post", lambda *a, **k: chamadas.append(1))
+
+    runner.trigger_pending_summaries(db_session, settings)
+
+    assert chamadas == []
+
+
+def test_trigger_pending_summaries_chama_a_api_pra_cada_reuniao_transcrita(
+    db_session: Session, worker_settings: WorkerSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = worker_settings.model_copy(
+        update={"worker_auto_summarize": True, "worker_service_token": "token-de-teste"}
+    )
+    m1 = _meeting(status="transcribed", audio_dir="a")
+    m2 = _meeting(status="transcribed", audio_dir="b")
+    db_session.add_all([m1, m2])
+    db_session.commit()
+    chamadas = []
+    monkeypatch.setattr(
+        runner.httpx2,
+        "post",
+        lambda url, headers, timeout: (chamadas.append((url, headers)), _RespostaHttpFalsa())[1],
+    )
+
+    runner.trigger_pending_summaries(db_session, settings)
+
+    assert len(chamadas) == 2
+    for url, headers in chamadas:
+        assert headers == {"Authorization": "Bearer token-de-teste"}
+        assert url.endswith("/summarize")
+
+
+def test_trigger_pending_summaries_ignora_reunioes_summary_failed(
+    db_session: Session, worker_settings: WorkerSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = worker_settings.model_copy(
+        update={"worker_auto_summarize": True, "worker_service_token": "token-de-teste"}
+    )
+    meeting = _meeting(status="summary_failed")
+    db_session.add(meeting)
+    db_session.commit()
+    chamadas = []
+    monkeypatch.setattr(runner.httpx2, "post", lambda *a, **k: chamadas.append(1))
+
+    runner.trigger_pending_summaries(db_session, settings)
+
+    assert chamadas == []
+
+
+def test_trigger_pending_summaries_falha_http_nao_propaga(
+    db_session: Session, worker_settings: WorkerSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = worker_settings.model_copy(
+        update={"worker_auto_summarize": True, "worker_service_token": "token-de-teste"}
+    )
+    meeting = _meeting(status="transcribed")
+    db_session.add(meeting)
+    db_session.commit()
+
+    def _falha(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("conexão recusada")
+
+    monkeypatch.setattr(runner.httpx2, "post", _falha)
+
+    runner.trigger_pending_summaries(db_session, settings)  # não levanta
