@@ -73,7 +73,9 @@ ordem em que aconteceram, com sobreposição entre pedaços consecutivos \
 
 Consolide tudo num único resumo final, no mesmo formato -- \
 Markdown com exatamente estas quatro seções, nesta ordem, cada uma com \
-título em nível 2 (##): Pauta, Decisões, Pendências, Pontos em aberto.
+título em nível 2, exatamente "## " no início da linha (não "### ", \
+não nenhum outro nível, mesmo que os pedaços recebidos abaixo estejam \
+em outro nível): Pauta, Decisões, Pendências, Pontos em aberto.
 
 Uma decisão ou pendência que aparece em dois pedaços por causa da \
 sobreposição conta só uma vez. Preserve tudo que os pedaços, juntos, \
