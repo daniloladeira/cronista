@@ -1,6 +1,6 @@
 # Resumo · Contrato
 
-> **Versão:** 1.2 · **Última atualização:** 2026-08-22
+> **Versão:** 1.3 · **Última atualização:** 2026-08-22
 > Decisão correspondente: [0005](adr/0005-langchain-na-camada-de-resumo.md)
 
 ## 1. Papel
@@ -52,6 +52,8 @@ Consequência prática já prevista: se as dependências conflitarem com `ctrans
 > - **v3** (mesma instrução + um exemplo de poucas linhas embutido no prompt, mostrando a diferença Decisão/Pendência num caso concreto): **corrigiu** — Pendências passou a sair certo, com os dois responsáveis corretamente identificados. Ficou um resíduo menor: Decisões às vezes inclui uma frase inferida que não foi dita desse jeito na transcrição (não é fabricação de fato, é excesso de síntese) — não bloqueante, registrado pra acompanhar quando houver reunião real pra medir (CT-37).
 >
 > `PROMPT_VERSION` está em v3. Modelo (`llama3.1:8b`) segue como primeiro candidato, não uma escolha final — comparação com outros modelos fica pra quando houver reunião real de domínio (CT-37), mesmo bloqueio do CT-36.
+
+> **Status: implementado, etapa 4** (`cronista/api/summarize.py`, `_dividir_em_blocos()` + `_PROMPT_CONSOLIDACAO`). Transcrição maior que `Settings.summary_context_chars` (heurística de caracteres, padrão 12.000 — medido contra o `default_num_ctx=4096` que o Ollama relatou pro `llama3.1:8b` nesta máquina) divide respeitando fronteira de segmento, com sobreposição configurável (`summary_block_overlap_segments`), resume cada bloco com o mesmo prompt principal, e consolida com um prompt dedicado. Testado com mock (blocos corretos, sem perder segmento, sobreposição real, falha em qualquer chamada marca `summary_failed`) e **validado contra Ollama real**: o mecanismo funciona (múltiplas chamadas, consolidação real), mas com um limite artificialmente baixo (200 caracteres, só pra forçar fragmentação extrema num teste manual) a qualidade da consolidação degradou — itens duplicados, um item mal classificado dentro da seção errada. Não é evidência de que o padrão de 12.000 caracteres (blocos bem maiores, poucos por reunião real) tenha o mesmo problema; não foi medido nesse tamanho por falta de reunião real longa disponível. Achado colateral, real: o mesmo teste expôs que a validação de formato aceitava `### Pauta` (nível 3) por engano, porque `"## Pauta"` é substring de `"### Pauta"` — corrigido pra exigir o título exatamente em nível 2 (`tests/test_summarize.py::test_summarize_titulo_em_nivel_errado_e_malformado`).
 
 ## 5. Transcrições longas
 

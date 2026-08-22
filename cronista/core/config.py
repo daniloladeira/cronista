@@ -73,3 +73,12 @@ class Settings(DatabaseSettings):
     ollama_model: str = ""
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-5"
+
+    # RF-17, docs/13-resumo.md §5: transcrição maior que a janela divide
+    # em blocos em vez de truncar. Heurística de caracteres, não contagem
+    # exata de token -- medido contra llama3.1:8b nesta máquina (Ollama
+    # relatou default_num_ctx=4096 pra ele), com folga pro prompt de
+    # sistema e pra resposta. "O limiar exato... dependem do modelo
+    # escolhido" (docs/13 §8) -- ajustar se o modelo mudar.
+    summary_context_chars: int = 12_000
+    summary_block_overlap_segments: int = 3

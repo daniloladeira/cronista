@@ -8,6 +8,8 @@ Whisper, e VRAM não cabe os dois modelos ao mesmo tempo (docs/07-arquitetura.md
 
 from __future__ import annotations
 
+import re
+
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -15,7 +17,7 @@ from langchain_ollama import ChatOllama
 from sqlalchemy.orm import Session
 
 from cronista.core.config import Settings
-from cronista.core.models import Meeting, Summary
+from cronista.core.models import Meeting, Segment, Summary
 
 PROMPT_VERSION = "v3"
 
@@ -63,6 +65,23 @@ Se uma seção não tiver conteúdo, escreva-a mesmo assim, com o texto \
 Nunca invente uma decisão, pendência ou fala que não está na transcrição. \
 Um resumo errado é pior que nenhum resumo."""
 
+_PROMPT_CONSOLIDACAO = """Você recebe abaixo resumos parciais do mesmo \
+formato de quatro seções, cada um cobrindo um pedaço de uma reunião \
+longa que foi dividida por não caber inteira numa única chamada -- na \
+ordem em que aconteceram, com sobreposição entre pedaços consecutivos \
+(o mesmo trecho pode aparecer resumido nos dois lados da divisão).
+
+Consolide tudo num único resumo final, no mesmo formato -- \
+Markdown com exatamente estas quatro seções, nesta ordem, cada uma com \
+título em nível 2 (##): Pauta, Decisões, Pendências, Pontos em aberto.
+
+Uma decisão ou pendência que aparece em dois pedaços por causa da \
+sobreposição conta só uma vez. Preserve tudo que os pedaços, juntos, \
+registraram -- nada pode se perder por causa da divisão. Se uma seção \
+não tiver conteúdo, escreva-a mesmo assim, com o texto "Nenhum." abaixo \
+do título -- nunca omita a seção. Nunca invente algo que não está em \
+nenhum dos pedaços recebidos."""
+
 
 class ProviderUnavailable(RuntimeError):
     """O provedor de LLM não respondeu (docs/13-resumo.md §7) -- a rota
@@ -95,13 +114,62 @@ def _modelo(settings: Settings, provider: str) -> BaseChatModel:
     raise ValueError(f"provedor de LLM desconhecido: {provider!r}")
 
 
-def _texto_transcricao(meeting: Meeting) -> str:
-    segmentos = sorted(meeting.segments, key=lambda s: s.start_ms)
+def _texto_transcricao(segmentos: list[Segment]) -> str:
     return "\n".join(f"{s.speaker}: {s.text}" for s in segmentos)
 
 
 def _tem_quatro_secoes(markdown: str) -> bool:
-    return all(f"## {secao}" in markdown for secao in _SECOES)
+    # `in markdown` sozinho aceitava "### Pauta" como se fosse "## Pauta"
+    # -- "## Pauta" é substring de "### Pauta" (achado testando de
+    # verdade contra Ollama real, não presumido). Precisa do título
+    # exatamente em nível 2, começando a linha.
+    return all(
+        re.search(rf"^## {re.escape(secao)}\b", markdown, re.MULTILINE) is not None
+        for secao in _SECOES
+    )
+
+
+def _dividir_em_blocos(
+    segmentos: list[Segment], limite_chars: int, sobreposicao: int
+) -> list[list[Segment]]:
+    """RF-17: divide em blocos que cabem em `limite_chars` (heurística de
+    caracteres — docs/13-resumo.md §5), respeitando fronteira de
+    segmento (nunca corta um no meio) e repetindo os últimos
+    `sobreposicao` segmentos de um bloco como início do próximo, pra uma
+    decisão perto da fronteira não se perder. Se um único segmento já
+    excede `limite_chars` sozinho (raro -- fala de Whisper costuma ser
+    curta), o bloco fica um pouco maior que o limite em vez de cortar a
+    fala ao meio; truncar é o que RF-17 proíbe."""
+    blocos: list[list[Segment]] = []
+    atual: list[Segment] = []
+    tamanho_atual = 0
+    for segmento in segmentos:
+        tamanho_linha = len(f"{segmento.speaker}: {segmento.text}\n")
+        if atual and tamanho_atual + tamanho_linha > limite_chars:
+            blocos.append(atual)
+            atual = atual[-sobreposicao:] if sobreposicao else []
+            tamanho_atual = sum(len(f"{s.speaker}: {s.text}\n") for s in atual)
+        atual.append(segmento)
+        tamanho_atual += tamanho_linha
+    if atual:
+        blocos.append(atual)
+    return blocos
+
+
+def _invocar(modelo: BaseChatModel, prompt_sistema: str, texto: str, provider: str) -> str:
+    try:
+        # Exceção ampla de propósito: cada provedor levanta um tipo
+        # diferente pra "não respondeu" (conexão recusada, timeout,
+        # 401/503 do lado deles), e não vale a pena acoplar este módulo
+        # aos detalhes internos de cada SDK só pra distinguir isso --
+        # mesmo espírito de model_manager.is_out_of_memory, que também
+        # aproxima em vez de casar com uma classe de exceção exata.
+        resposta = modelo.invoke(
+            [SystemMessage(content=prompt_sistema), HumanMessage(content=texto)]
+        )
+    except Exception as exc:
+        raise ProviderUnavailable(f"{provider} não respondeu: {exc}") from exc
+    return str(resposta.content)
 
 
 def summarize(
@@ -112,27 +180,35 @@ def summarize(
 ) -> Summary:
     """Gera um novo resumo e persiste (RN-03: nunca sobrescreve, sempre
     insere). RF-18: `provider` escolhe o provedor por execução, sobrepondo
-    o padrão de `settings.llm_provider`."""
+    o padrão de `settings.llm_provider`. RF-17: transcrição maior que
+    `settings.summary_context_chars` divide em blocos com sobreposição,
+    resume cada um e consolida — nunca trunca (docs/13-resumo.md §5)."""
     provider = provider or settings.llm_provider
     modelo = _modelo(settings, provider)
-    transcricao = _texto_transcricao(meeting)
+    segmentos = sorted(meeting.segments, key=lambda s: s.start_ms)
+    transcricao = _texto_transcricao(segmentos)
 
     try:
-        # Exceção ampla de propósito: cada provedor levanta um tipo
-        # diferente pra "não respondeu" (conexão recusada, timeout,
-        # 401/503 do lado deles), e não vale a pena acoplar este módulo
-        # aos detalhes internos de cada SDK só pra distinguir isso --
-        # mesmo espírito de model_manager.is_out_of_memory, que também
-        # aproxima em vez de casar com uma classe de exceção exata.
-        resposta = modelo.invoke(
-            [SystemMessage(content=_PROMPT_SISTEMA), HumanMessage(content=transcricao)]
-        )
-    except Exception as exc:
+        if len(transcricao) <= settings.summary_context_chars:
+            markdown = _invocar(modelo, _PROMPT_SISTEMA, transcricao, provider)
+        else:
+            blocos = _dividir_em_blocos(
+                segmentos, settings.summary_context_chars, settings.summary_block_overlap_segments
+            )
+            resumos_parciais = [
+                _invocar(modelo, _PROMPT_SISTEMA, _texto_transcricao(bloco), provider)
+                for bloco in blocos
+            ]
+            texto_consolidacao = "\n\n".join(
+                f"--- Pedaço {i + 1} de {len(resumos_parciais)} ---\n{resumo}"
+                for i, resumo in enumerate(resumos_parciais)
+            )
+            markdown = _invocar(modelo, _PROMPT_CONSOLIDACAO, texto_consolidacao, provider)
+    except ProviderUnavailable:
         meeting.status = "summary_failed"
         db.commit()
-        raise ProviderUnavailable(f"{provider} não respondeu: {exc}") from exc
+        raise
 
-    markdown = str(resposta.content)
     if not _tem_quatro_secoes(markdown):
         meeting.status = "summary_failed"
         db.commit()
