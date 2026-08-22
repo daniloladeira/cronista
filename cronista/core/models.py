@@ -94,7 +94,10 @@ class Meeting(Base):
 
     def is_summarizable(self) -> bool:
         # RN-07: só gera resumo a partir de 'transcribed' ou 'summarized'.
-        return self.status in ("transcribed", "summarized")
+        # 'summary_failed' também entra: é o estado de "nova tentativa"
+        # do diagrama (docs/08-modelo-de-dados.md §5) -- sem isso, uma
+        # falha de provedor deixaria a reunião sem caminho de volta.
+        return self.status in ("transcribed", "summarized", "summary_failed")
 
     def is_reprocessable(self) -> bool:
         # docs/12-transcricao.md §10: cobre os dois casos em que

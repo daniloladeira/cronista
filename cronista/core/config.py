@@ -64,3 +64,12 @@ class Settings(DatabaseSettings):
     access_token_minutes: int = 30
     refresh_token_days: int = 30
     data_root: str  # mesma raiz do cliente — RE-01, docs/09-api.md §1
+
+    # Resumo (ADR-0005, docs/13-resumo.md §3). ollama_model fica vazio até
+    # etapa 3 medir qual modelo usar em português real -- não é escolhido
+    # antes por adivinhação (mesmo espírito de docs/13 §3 e docs/12 §6).
+    llm_provider: str = "ollama"
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = ""
+    anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-sonnet-5"
