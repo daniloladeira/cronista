@@ -126,6 +126,14 @@ Listagem, leitura de transcrição e resumos, busca com stemming de português.
 
 Confirmado nos dois bancos (dev e teste) e via `GET /search` de ponta a ponta: os três casos batem agora — `decisão`/`decidimos`, `decisão`/`decisões`, e a conjugação verbal que já funcionava antes (`decidir`/`decidiu`/`decidimos`) continua funcionando. `docs/08-modelo-de-dados.md` corrigido pra não afirmar mais algo que não era verdade.
 
+**Etapa 2 (painel navegável) implementada em 2026-08-22**: `cronista list`/`ler`/`buscar` convergem num único painel Textual (`cronista/client/panel.py`, ADR-0016) — lista de reuniões à esquerda, abas Transcrição/Resumo à direita (`TabbedContent`, `Markdown` widget pro resumo), busca embutida na tecla `/` que repopula a lista sem sair da tela. Fora de terminal interativo, os três comandos caem num fallback de texto puro (tabela/transcrição impressa), sem tentar abrir Textual sem TTY.
+
+Seguindo a regra que o próprio ADR-0016 registrou depois da primeira tentativa rejeitada ("horrível, horrível, horrível"): exportado SVG do painel em dois estados antes de tocar no `cli.py`, e a inspeção real (não só visual, lendo as linhas de texto extraídas) achou um problema de verdade — título de reunião longo quebra em duas linhas na lista, e sem espaçamento colava direto no item seguinte. Corrigido (`margin-bottom` no `ListItem`) e reconferido antes de prosseguir.
+
+**Achado real testando os três comandos contra dados de verdade**: o processo da API rodando havia sido iniciado horas antes de toda essa fase — `GET /meetings`, que já existia desde a Fase 2, funcionava; `/meetings/{id}`, `/transcript` e `/search`, todos novos, devolviam 404 mesmo existindo no código e passando nos testes (que sempre usam uma instância nova da app, não o processo real rodando). Reiniciar o processo resolveu — lição prática: testes passando não substituem validar contra o processo real de pé, principalmente numa sessão longa onde o código mudou depois do processo já estar rodando.
+
+Falta pra fechar a Fase 5: auditoria formal contra CT-25 a CT-29.
+
 ### Fase 6 · Importação de arquivo
 
 `cronista importar`, conversão com ffmpeg, reaproveitando o endpoint da Fase 2.

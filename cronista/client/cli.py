@@ -9,6 +9,7 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.markdown import Markdown as RichMarkdown
 from rich.table import Table
 from rich.text import Text
 
@@ -17,6 +18,7 @@ from cronista.client import (
     capture,
     home,
     naming,
+    panel,
     reconciliation,
     registration,
     session_info,
@@ -291,6 +293,59 @@ def rec(
             "Áudio salvo, mas a API não confirmou o registro agora — fica pendente "
             "e será reenviado com `cronista sync` quando ela voltar."
         )
+
+
+def _tabela_reunioes(reunioes: list[dict], titulo: str) -> Table:
+    tabela = Table(title=titulo)
+    tabela.add_column("Título")
+    tabela.add_column("Estado")
+    tabela.add_column("Início")
+    for r in reunioes:
+        tabela.add_row(r["title"], r["status"], r["started_at"])
+    return tabela
+
+
+@app.command(name="list")
+def list_() -> None:
+    """Lista reuniões, e navega entre elas (UC-07, ADR-0016)."""
+    if not _console.is_terminal:
+        _console.print(_tabela_reunioes(api_client.list_meetings(), "Reuniões"))
+        return
+    panel.PanelApp().run()
+
+
+@app.command()
+def ler(meeting_id: str = typer.Argument(..., help="ID da reunião")) -> None:
+    """Abre uma reunião já focada, com transcrição e resumo (UC-07, ADR-0016)."""
+    if not _console.is_terminal:
+        reuniao = api_client.get_meeting(meeting_id)
+        segmentos = api_client.get_transcript(meeting_id)
+        for s in segmentos:
+            _console.print(f"[{s['timestamp']}] {s['speaker']}: {s['text']}")
+        resumos = reuniao.get("summaries") or []
+        if resumos:
+            mais_recente = sorted(resumos, key=lambda r: r["generated_at"])[-1]
+            _console.print(RichMarkdown(mais_recente["markdown"]))
+        return
+    panel.PanelApp(meeting_id=meeting_id).run()
+
+
+@app.command()
+def buscar(termo: str = typer.Argument(..., help="Termo de busca")) -> None:
+    """Busca por conteúdo em todas as transcrições, com stemming de
+    português (UC-08, RF-23/24, ADR-0016)."""
+    if not _console.is_terminal:
+        resultados = api_client.search(termo)
+        tabela = Table(title=f'Busca: "{termo}"')
+        tabela.add_column("Reunião")
+        tabela.add_column("Instante")
+        tabela.add_column("Falante")
+        tabela.add_column("Trecho")
+        for r in resultados:
+            tabela.add_row(r["meeting_title"], r["timestamp"], r["speaker"], r["text"])
+        _console.print(tabela)
+        return
+    panel.PanelApp(search_term=termo).run()
 
 
 if __name__ == "__main__":
