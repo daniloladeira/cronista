@@ -4,6 +4,7 @@ stemming de português (CT-27) só se prova contra o banco de verdade."""
 
 from __future__ import annotations
 
+import time
 import uuid
 from datetime import datetime, timezone
 
@@ -101,3 +102,35 @@ def test_search_filtra_por_periodo(client, auth_headers, db_session):
     corpo = resp.json()
     assert len(corpo) == 1
     assert corpo[0]["meeting_id"] == str(recente.id)
+
+
+def test_search_responde_em_menos_de_1_segundo_com_volume_realista(client, auth_headers, db_session):
+    # CT-28. 1136 segmentos é o que o banco de dev real tem hoje (medido em
+    # 2026-08-22, GET /search real: ~220ms) -- 5000 dá margem sem depender
+    # do estado do banco de dev, que só cresce. O índice GIN é quem faz o
+    # trabalho aqui, não o volume pequeno de linhas em si.
+    reunioes = [_meeting(db_session, id=uuid.uuid4()) for _ in range(20)]
+    palavras = ["decidimos", "pauta", "próximo", "cliente", "prazo", "revisão", "equipe", "processo"]
+    db_session.bulk_insert_mappings(
+        Segment,
+        [
+            {
+                "id": uuid.uuid4(),
+                "meeting_id": reunioes[i % len(reunioes)].id,
+                "speaker": "voce" if i % 2 == 0 else "outros",
+                "start_ms": i * 2000,
+                "end_ms": i * 2000 + 2000,
+                "text": f"{palavras[i % len(palavras)]} sobre o assunto número {i}",
+            }
+            for i in range(5000)
+        ],
+    )
+    db_session.commit()
+
+    inicio = time.perf_counter()
+    resp = client.get("/api/v1/search", params={"q": "decisão"}, headers=auth_headers)
+    duracao = time.perf_counter() - inicio
+
+    assert resp.status_code == 200
+    assert len(resp.json()) > 0
+    assert duracao < 1.0

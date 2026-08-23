@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Versão:** 1.1 · **Última atualização:** 2026-08-17
+> **Versão:** 1.2 · **Última atualização:** 2026-08-22
 
 ## 1. Ordem e critério
 
@@ -132,7 +132,23 @@ Seguindo a regra que o próprio ADR-0016 registrou depois da primeira tentativa 
 
 **Achado real testando os três comandos contra dados de verdade**: o processo da API rodando havia sido iniciado horas antes de toda essa fase — `GET /meetings`, que já existia desde a Fase 2, funcionava; `/meetings/{id}`, `/transcript` e `/search`, todos novos, devolviam 404 mesmo existindo no código e passando nos testes (que sempre usam uma instância nova da app, não o processo real rodando). Reiniciar o processo resolveu — lição prática: testes passando não substituem validar contra o processo real de pé, principalmente numa sessão longa onde o código mudou depois do processo já estar rodando.
 
-Falta pra fechar a Fase 5: auditoria formal contra CT-25 a CT-29.
+**Auditoria formal contra CT-25 a CT-29 (2026-08-22): quatro dos cinco já tinham teste automatizado; um não tinha.**
+
+| CT | Cobertura | Onde |
+|---|---|---|
+| CT-25 | ✅ | `test_meeting_detail.py` (estado + trilhas + resumos), `test_transcript.py` (transcrição) |
+| CT-26 | ✅ | `test_get_transcript_sem_segmento_devolve_lista_vazia_nao_erro` — reunião `status="recorded"` (ainda sem transcrever) devolve `200 []`, não erro |
+| CT-27 | ✅ | `test_search_por_decisao_encontra_decidimos_stemming_portugues` |
+| CT-28 | ⚠️ → ✅ | não tinha teste algum — corrigido nesta auditoria, ver abaixo |
+| CT-29 | ✅ | `test_search_sem_resultado_devolve_lista_vazia_com_200` |
+
+**CT-28 ("busca responde em menos de 1 segundo") era a lacuna real.** Escrever um teste com os 2-3 segmentos sintéticos que os outros testes usam não provaria nada — GIN index ou não, qualquer busca em 3 linhas é instantânea. Adicionei `test_search_responde_em_menos_de_1_segundo_com_volume_realista` (`tests/test_search.py`) que semeia 5.000 segmentos reais (Postgres de teste, não mock) antes de medir. 5.000 porque o banco de dev real tem 1.136 hoje — dá margem sem depender do tamanho atual do acervo, que só cresce.
+
+Medido dos dois jeitos, não só presumido pelo índice GIN existir:
+- **Contra o banco de dev real** (1.136 segmentos, `GET /search?q=decisão` via curl, token real): três chamadas, ~215-227ms cada.
+- **Contra o teste automatizado** (5.000 segmentos sintéticos, TestClient): passa com folga, muito abaixo de 1s.
+
+Fase 5 fechada.
 
 ### Fase 6 · Importação de arquivo
 
