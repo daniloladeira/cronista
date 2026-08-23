@@ -16,7 +16,7 @@ from cronista.api import summarize
 from cronista.api.security import require_access_token
 from cronista.core.config import RECORDINGS_DIRNAME, Settings
 from cronista.core.db import get_db
-from cronista.core.models import Meeting, Summary, Track
+from cronista.core.models import Meeting, Segment, Summary, Track
 
 router = APIRouter(
     prefix="/meetings",
@@ -99,6 +99,28 @@ class SummaryOut(BaseModel):
     generated_at: datetime
 
 
+class MeetingDetailOut(MeetingOut):
+    # RF-20/RF-22, UC-07: "dados de uma reunião, suas trilhas e resumos"
+    # (docs/09-api.md §2) -- estende MeetingOut em vez de duplicar campo.
+    tracks: list[TrackOut]
+    summaries: list[SummaryOut]
+
+
+class SegmentOut(BaseModel):
+    # Construído explícito no handler, não via from_attributes: `timestamp`
+    # é um método em Segment (core/models.py), não um atributo -- precisa
+    # ser chamado, não só lido.
+    speaker: str
+    start_ms: int
+    end_ms: int
+    text: str
+    timestamp: str
+
+
+class MeetingRename(BaseModel):
+    title: str
+
+
 @router.post("", response_model=MeetingOut, status_code=status.HTTP_201_CREATED)
 def create_meeting(body: MeetingCreate, db: Session = Depends(get_db)) -> Meeting:
     # Idempotente por id (UC-11): se já existe, devolve a existente em vez
@@ -129,6 +151,48 @@ def create_meeting(body: MeetingCreate, db: Session = Depends(get_db)) -> Meetin
 @router.get("", response_model=list[MeetingOut])
 def list_meetings(db: Session = Depends(get_db)) -> list[Meeting]:
     return db.query(Meeting).order_by(Meeting.started_at.desc()).all()
+
+
+@router.get("/{meeting_id}", response_model=MeetingDetailOut)
+def get_meeting(meeting_id: UUID, db: Session = Depends(get_db)) -> Meeting:
+    """RF-20/RF-22, UC-07: dados da reunião com trilhas e resumos."""
+    meeting = db.get(Meeting, meeting_id)
+    if meeting is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reunião não encontrada.")
+    return meeting
+
+
+@router.get("/{meeting_id}/transcript", response_model=list[SegmentOut])
+def get_transcript(meeting_id: UUID, db: Session = Depends(get_db)) -> list[SegmentOut]:
+    """RF-21, UC-07: transcrição mesclada e ordenada -- a mesclagem é do
+    servidor (docs/09-api.md §3), o cliente nunca recebe trilha separada.
+    Reunião ainda não transcrita devolve lista vazia, não erro (CT-26) --
+    RF-21 não exige status `transcribed`."""
+    meeting = db.get(Meeting, meeting_id)
+    if meeting is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reunião não encontrada.")
+
+    segments = db.query(Segment).filter(Segment.meeting_id == meeting_id).order_by(Segment.start_ms)
+    return [
+        SegmentOut(
+            speaker=s.speaker, start_ms=s.start_ms, end_ms=s.end_ms, text=s.text, timestamp=s.timestamp()
+        )
+        for s in segments
+    ]
+
+
+@router.patch("/{meeting_id}", response_model=MeetingOut)
+def rename_meeting(meeting_id: UUID, body: MeetingRename, db: Session = Depends(get_db)) -> Meeting:
+    """UC-07: altera o título. Sem restrição de estado -- renomear não
+    interfere com o pipeline de transcrição/resumo."""
+    meeting = db.get(Meeting, meeting_id)
+    if meeting is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reunião não encontrada.")
+
+    meeting.title = body.title
+    db.commit()
+    db.refresh(meeting)
+    return meeting
 
 
 @router.post(

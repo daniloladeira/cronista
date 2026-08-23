@@ -1,6 +1,6 @@
 # Modelo de Dados
 
-> **Versão:** 1.0 · **Última atualização:** 2026-08-12
+> **Versão:** 1.1 · **Última atualização:** 2026-08-22
 > Decisões correspondentes: [0003](adr/0003-postgres-como-banco.md), [0004](adr/0004-uuid-timestamptz-caminhos-relativos.md), [0009](adr/0009-sqlalchemy-alembic.md)
 
 ## 1. Princípio de separação
@@ -146,14 +146,14 @@ CREATE TABLE segments (
     start_ms   integer  NOT NULL,
     end_ms     integer  NOT NULL,
     text       text     NOT NULL,
-    search     tsvector GENERATED ALWAYS AS (to_tsvector('portuguese', text)) STORED
+    search     tsvector GENERATED ALWAYS AS (to_tsvector('pt_br_hunspell', text)) STORED
 );
 
 CREATE INDEX segments_meeting_idx ON segments (meeting_id, start_ms);
 CREATE INDEX segments_search_idx  ON segments USING GIN (search);
 ```
 
-**A coluna `search` é o coração da busca.** Ela é gerada e mantida pelo próprio banco, não há trigger para escrever, nem risco de índice divergir do conteúdo. O dicionário `portuguese` aplica stemming: "decidimos", "decidido" e "decisão" colapsam na mesma raiz, e buscar por uma encontra as outras.
+**A coluna `search` é o coração da busca.** Ela é gerada e mantida pelo próprio banco, não há trigger para escrever, nem risco de índice divergir do conteúdo. `pt_br_hunspell` é uma configuração de busca própria do projeto (`docker/initdb/02-busca-portugues-hunspell.sql`), não o dicionário `portuguese` padrão do Postgres — testado de verdade, o padrão sozinho **não** junta "decisão"/"decidimos", nem "decisão"/"decisões" (medido, não presumido; docs/15-roadmap.md, Fase 5, tem o achado completo). `pt_br_hunspell` encadeia três camadas antes de aceitar uma palavra: um dicionário de sinônimos escrito à mão (resolve a derivação substantivo/verbo), um dicionário hunspell de português (resolve flexão irregular como o plural em -ão/-ões), e por fim o stemmer `portuguese` padrão como fallback (resolve flexão regular). Com essas três camadas, "decidimos", "decidido" e "decisão" agora colapsam na mesma busca de verdade.
 
 Essa é a razão técnica de PostgreSQL ter substituído SQLite no projeto. O mecanismo equivalente do SQLite não faz stemming de português, e num sistema cuja tese é qualidade em pt-BR isso deixaria de ser detalhe.
 
@@ -282,7 +282,7 @@ erDiagram
         integer  start_ms
         integer  end_ms
         text     text
-        tsvector search "gerada · dicionário portuguese"
+        tsvector search "gerada · config pt_br_hunspell"
     }
     SUMMARIES {
         uuid        id PK

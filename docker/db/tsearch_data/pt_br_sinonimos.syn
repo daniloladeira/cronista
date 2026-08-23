@@ -1,0 +1,13 @@
+# Sinônimos que unificam palavras derivacionalmente relacionadas que nem
+# snowball nem hunspell juntam sozinhos -- os dois lidam com variação de
+# FLEXÃO (plural, conjugação), não de DERIVAÇÃO (substantivo formado a
+# partir de verbo). "decidir" já reduz certo com "decidimos"/"decidiu"
+# (verbo, flexão); "decisão"/"decisões" (substantivo) formam outro grupo
+# à parte. Mapeia o substantivo pro verbo, que já funciona.
+#
+# Começo pequeno, só o par que docs/14-plano-de-testes.md CT-27 cita
+# (docs/15-roadmap.md, Fase 5) -- crescer isso pra vocabulário de domínio
+# mais amplo é ideia registrada, não decidida (paralelo a RF-13/
+# WHISPER_VOCABULARY, que resolve o mesmo tipo de lacuna na transcrição).
+decisão decidir
+decisões decidir

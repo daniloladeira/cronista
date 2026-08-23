@@ -8,7 +8,8 @@
 
 services:
   db:
-    image: postgres:17-alpine
+    build:
+      context: ./docker/db
     container_name: cronista-db
     restart: unless-stopped
     environment:

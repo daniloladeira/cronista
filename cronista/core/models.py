@@ -153,8 +153,12 @@ class Segment(Base):
     start_ms: Mapped[int] = mapped_column(Integer, nullable=False)
     end_ms: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    # pt_br_hunspell: dicionário/configuração criado à parte (docker/initdb
+    # /02-busca-portugues-hunspell.sql), não pelo SQLAlchemy -- 'portuguese'
+    # puro (snowball) não junta "decisão"/"decisões" nem "decisão"/
+    # "decidimos" (medido, não presumido; docs/15-roadmap.md, Fase 5).
     search: Mapped[str | None] = mapped_column(
-        TSVECTOR, Computed("to_tsvector('portuguese', text)", persisted=True)
+        TSVECTOR, Computed("to_tsvector('pt_br_hunspell', text)", persisted=True)
     )
 
     meeting: Mapped["Meeting"] = relationship(back_populates="segments")

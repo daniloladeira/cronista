@@ -115,6 +115,17 @@ Listagem, leitura de transcrição e resumos, busca com stemming de português.
 
 **É a fase que transforma um monte de reuniões em acervo.** Sem busca, o valor decai com o tempo: ninguém relê a transcrição de três meses atrás procurando algo à mão.
 
+**Etapa 1 (API somente leitura) implementada em 2026-08-22**: `GET /meetings/{id}` (RF-20/22, com trilhas e resumos), `GET /meetings/{id}/transcript` (RF-21), `PATCH /meetings/{id}` (renomear), `GET /search` (RF-23/24). Painel Textual (ADR-0016) e auditoria contra CT-25-29 ficam pra próxima etapa.
+
+**Achado real, construindo o `GET /search`: o "pronto quando" desta fase, como escrito, era falso com o Postgres padrão.** Testei o exemplo do próprio CT-27 direto no banco, fora do meu código: `to_tsvector('portuguese', 'decidimos') @@ plainto_tsquery('portuguese', 'decisão')` dava **falso**. Pior: nem "decisão"/"decisões" (plural da mesma palavra) o dicionário `portuguese` padrão junta — o padrão -ão/-ões é irregular em português e o stemmer por sufixo (snowball) não trata bem esse caso. Isso não era só uma lacuna de teste: [docs/08-modelo-de-dados.md](08-modelo-de-dados.md) já afirmava, como parte da razão de ter escolhido Postgres em vez de SQLite, que isso funcionava — estava documentado errado.
+
+**Conserto, em duas camadas, medido até funcionar de verdade:**
+
+1. **Dicionário hunspell de português** (`hunspell-pt-br`, pacote `apk` do Alpine — mesma base do `postgres:17-alpine` já usado), encadeado antes do stemmer padrão. Resolve flexão irregular (plural -ão/-ões). Exigiu conversão de codificação dos arquivos do dicionário (ISO-8859-1 → UTF-8) que o Postgres **não** faz sozinho a partir da declaração `SET` do arquivo — testado, deu erro de bytes inválidos antes de eu perceber isso.
+2. **Dicionário de sinônimos, escrito à mão** (`docker/db/tsearch_data/pt_br_sinonimos.syn`), encadeado antes do hunspell. Resolve o que nem hunspell resolve: "decisão" (substantivo) e "decidir" (verbo) são palavras derivacionalmente relacionadas, não uma variação flexional da mesma palavra — nenhum dicionário de flexão (snowball ou hunspell) junta as duas sozinho. O arquivo mapeia `decisão`/`decisões` pro verbo, que já reduzia certo. Começou pequeno, só o par que o CT-27 cita — crescer isso pra vocabulário de domínio mais amplo é ideia registrada, não decidida, no mesmo espírito de RF-13/`WHISPER_VOCABULARY`.
+
+Confirmado nos dois bancos (dev e teste) e via `GET /search` de ponta a ponta: os três casos batem agora — `decisão`/`decidimos`, `decisão`/`decisões`, e a conjugação verbal que já funcionava antes (`decidir`/`decidiu`/`decidimos`) continua funcionando. `docs/08-modelo-de-dados.md` corrigido pra não afirmar mais algo que não era verdade.
+
 ### Fase 6 · Importação de arquivo
 
 `cronista importar`, conversão com ffmpeg, reaproveitando o endpoint da Fase 2.

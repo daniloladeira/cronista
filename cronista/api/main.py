@@ -6,11 +6,13 @@ from fastapi import FastAPI
 
 from cronista.api.routes.auth import router as auth_router
 from cronista.api.routes.meetings import router as meetings_router
+from cronista.api.routes.search import router as search_router
 
 app = FastAPI(title="Cronista")
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(meetings_router, prefix="/api/v1")
+app.include_router(search_router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")
