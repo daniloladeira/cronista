@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Versão:** 1.2 · **Última atualização:** 2026-08-22
+> **Versão:** 1.3 · **Última atualização:** 2026-08-23
 
 ## 1. Ordem e critério
 
@@ -156,7 +156,21 @@ Fase 5 fechada.
 
 **Pronto quando:** um mp3 antigo vira reunião transcrita e resumida.
 
-**Fase barata por construção.** Toda a espinha já existe; o que entra é conversão de formato. O que ela **não** resolve: arquivo importado tem trilha única, então os segmentos ficam com falante `desconhecido`. Elevar isso exigiria diarização, decisão adiada em [ADR-0007](adr/0007-fonte-de-audio-plugavel.md).
+**Fase barata por construção, confirmado na prática.** ADR-0007 já tinha pago o custo estrutural desde o início — `meetings.source` já aceitava `'import'`, `Track` já era entidade própria numa lista de tamanho variável. Zero migração, zero mudança de API: só `cronista/client/conversion.py` (novo, encapsula `ffmpeg`/`ffprobe` via `subprocess`, mesmo papel que `capture.py` tem pra `soundcard`) e o comando `importar` em `cli.py`, reaproveitando `registration.register()` — a mesma função que `rec` já chama (UC-10 incluído por UC-04, não uma cópia).
+
+**Achado real, antes mesmo de escrever código: ffmpeg não estava instalado nesta máquina.** Verificado de verdade (`ffmpeg`/`ffprobe` ausentes do PATH, Git Bash e PowerShell). Instalado com `winget install Gyan.FFmpeg` (versão 9.0) a pedido do usuário — o que tornou FE-03 (UC-04, "ferramenta de conversão ausente") um caminho genuinamente testado contra a ausência real, não hipotético.
+
+**Validação de ponta a ponta, os quatro caminhos, contra a API real de dev:**
+- Sucesso: vídeo sintético (`ffmpeg -f lavfi`, 8s, testsrc+sine) → `cronista importar` → trilha `desconhecido.wav` real em disco, confirmada via `ffprobe` (16kHz, mono, PCM16, RN-09); `GET /meetings/{id}` confirma `source: "import"`, `speaker: "desconhecido"`. O worker pegou a reunião sozinho (`status` foi de `recorded` pra `transcribing` sem intervenção) — a fila de transcrição não distingue origem, como o ADR previu.
+- FE-01 (arquivo corrompido): `.mp4` com bytes de texto → `ffprobe` recusa (`moov atom not found`), CLI sai com código 4 e mensagem clara.
+- FE-02 (vídeo sem faixa de áudio): vídeo mudo sintético → probe detecta ausência de stream de áudio, código 4.
+- FE-03 (ffmpeg ausente): reproduzido de verdade removendo o diretório do ffmpeg do PATH da chamada → mensagem cita o comando de instalação, código 4.
+
+**Divergência de design registrada, não um bug:** `docs/11-cli.md` listava `importar` como "precisa da API: sim", sem a ressalva que `rec` tem. Reaproveitar `registration.register()` faz `importar` herdar de graça a mesma tolerância a API fora do ar que `rec` tem (grava a conversão em disco, marca pendência, `cronista sync` completa depois) — não foi construído à parte, é consequência de reusar a função certa. Documentado no próprio `docs/11-cli.md` com a mesma notação de rodapé.
+
+**O que ela não resolve, como já esperado:** arquivo importado tem trilha única, falante `desconhecido` em todos os segmentos. Elevar isso exigiria diarização, decisão adiada em [ADR-0007](adr/0007-fonte-de-audio-plugavel.md) — "começar por `desconhecido` e só pagar o custo se o resumo sofrer".
+
+Fase 6 fechada.
 
 ### Fase 7 · Retenção e exclusão
 

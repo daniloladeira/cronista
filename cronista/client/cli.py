@@ -16,6 +16,7 @@ from rich.text import Text
 from cronista.client import (
     api_client,
     capture,
+    conversion,
     home,
     naming,
     panel,
@@ -289,6 +290,76 @@ def rec(
     else:
         # UC-03 FE-01/FE-02: não é erro (docs/11-cli.md §5) — o áudio já
         # está íntegro em disco, só o registro na API que fica pendente.
+        typer.echo(
+            "Áudio salvo, mas a API não confirmou o registro agora — fica pendente "
+            "e será reenviado com `cronista sync` quando ela voltar."
+        )
+
+
+@app.command()
+def importar(
+    arquivo: str = typer.Argument(..., help="Caminho do arquivo de áudio ou vídeo."),
+    titulo: str = typer.Option(None, "--titulo", help="Título da reunião. Padrão: nome do arquivo."),
+) -> None:
+    """Importa um arquivo de áudio ou vídeo preexistente (UC-04). Converte
+    pro formato interno (RN-09) e segue o mesmo caminho de registro que
+    `rec` usa (UC-10) -- falante único `desconhecido` (RN-02)."""
+    caminho = Path(arquivo)
+    if not caminho.is_file():
+        typer.echo(f"Erro: arquivo '{arquivo}' não encontrado.", err=True)
+        raise typer.Exit(code=4)
+
+    try:
+        conversion.require_ffmpeg()
+        resultado_probe = conversion.probe(caminho)
+    except conversion.ConversionError as exc:
+        typer.echo(f"Erro: {exc}", err=True)
+        raise typer.Exit(code=4)
+
+    started_at = datetime.now(UTC)
+    title = titulo or caminho.stem
+    audio_dir = naming.make_audio_dir(title, started_at)
+    output_dir = Path(_settings.data_root) / RECORDINGS_DIRNAME / audio_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    track_path = output_dir / "desconhecido.wav"
+
+    try:
+        conversion.convert_to_wav(caminho, track_path)
+    except conversion.ConversionError as exc:
+        typer.echo(f"Erro: {exc}", err=True)
+        raise typer.Exit(code=4)
+
+    meeting_id = uuid7()
+    meeting_payload = {
+        "id": str(meeting_id),
+        "title": title,
+        "source": "import",
+        "host": socket.gethostname(),
+        "audio_dir": audio_dir,
+        "expected_tracks": 1,
+        "started_at": started_at.isoformat(),
+        "ended_at": started_at.isoformat(),
+        "duration_ms": resultado_probe.duration_ms,
+    }
+    track_payloads = [
+        {
+            "speaker": "desconhecido",
+            "path": track_path.name,
+            "sample_rate": 16_000,
+            "channels": 1,
+            "duration_ms": resultado_probe.duration_ms,
+            "size_bytes": track_path.stat().st_size,
+            "device": None,
+        }
+    ]
+
+    estado = registration.register(meeting_payload, track_payloads, _settings.data_root)
+
+    typer.echo(f"Arquivos em: {output_dir}")
+    if estado == "recorded":
+        typer.echo(f"Reunião registrada: {meeting_id}")
+        _report_reconciliation(reconciliation.reconcile(_settings.data_root))
+    else:
         typer.echo(
             "Áudio salvo, mas a API não confirmou o registro agora — fica pendente "
             "e será reenviado com `cronista sync` quando ela voltar."

@@ -1,6 +1,6 @@
 # Linha de Comando · Contrato
 
-> **Versão:** 1.4 · **Última atualização:** 2026-08-19
+> **Versão:** 1.5 · **Última atualização:** 2026-08-23
 > Decisões correspondentes: [0006](adr/0006-cli-antes-de-desktop.md), [0015](adr/0015-rich-como-apresentacao-cli.md), [0016](adr/0016-textual-para-navegacao.md)
 
 ## 1. Papel
@@ -20,7 +20,7 @@ O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 | `cronista login` | Autentica e guarda os tokens | sim | UC-01 |
 | `cronista devices` | Lista dispositivos de entrada e saída | **não** | UC-02 |
 | `cronista rec` | Grava a reunião até interrupção | **não**¹ | UC-03 |
-| `cronista importar <arquivo>` | Importa áudio ou vídeo existente | sim | UC-04 |
+| `cronista importar <arquivo>` | Importa áudio ou vídeo existente | sim³ | UC-04 |
 | `cronista sync` | Reenvia reuniões pendentes | sim | UC-11 |
 | `cronista list` | Abre o painel navegável de reuniões² | sim | UC-07 |
 | `cronista ler <id>` | Abre o painel já focado numa reunião² | sim | UC-07 |
@@ -32,6 +32,8 @@ O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 ¹ **`cronista rec` funciona com a API fora do ar.** Grava em disco e marca pendência, sem falhar. É a materialização do ADR-0012 na interface, e a razão de `cronista sync` existir.
 
 ² **`list`, `ler` e `buscar` são três portas de entrada para a mesma experiência navegável (ADR-0016), não três comandos independentes que imprimem e terminam.** Cada um abre o painel Textual num ponto de partida diferente — lista geral, uma reunião já aberta, ou busca já rodada — mas uma vez dentro, a navegação (setas, trocar de aba entre resumo/transcrição, nova busca) acontece na mesma tela, sem sair para rodar outro comando.
+
+³ **`cronista importar` também tolera API fora do ar, mesmo padrão de `rec`¹.** Não por decisão à parte — ele reaproveita a mesma `registration.register()` que `rec` chama (UC-10 incluído por UC-04): converte e grava a trilha em disco, marca pendência se a API não confirmar, e `cronista sync` completa depois. "Sim" na coluna acima descreve o uso normal, não uma trava.
 
 ## 3. Comportamentos que o contrato garante
 
