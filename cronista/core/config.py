@@ -85,11 +85,22 @@ class Settings(DatabaseSettings):
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-5"
 
+    # Janela de contexto do Ollama, explícita em vez de deixar o Ollama
+    # escolher sozinho -- o padrão dele (4096) forçava reuniões reais de
+    # ~20min a dividir em blocos sem precisar de verdade, e a divisão
+    # (map-reduce) é justamente o que perdia decisão inteira na
+    # consolidação (medido em 2026-08-22, docs/13-resumo.md §5). 8192
+    # medido contra llama3.1:8b nesta GPU (RTX 4060, 8GB): coube na
+    # VRAM (~6,7GB usados, sem derramar pro CPU -- resposta em ~11s, não
+    # os 20-50x mais lento que CPU-offload causaria), com pouca folga
+    # sobrando. Ajustar pra baixo se outro modelo/GPU não couber.
+    ollama_num_ctx: int = 8192
+
     # RF-17, docs/13-resumo.md §5: transcrição maior que a janela divide
     # em blocos em vez de truncar. Heurística de caracteres, não contagem
-    # exata de token -- medido contra llama3.1:8b nesta máquina (Ollama
-    # relatou default_num_ctx=4096 pra ele), com folga pro prompt de
-    # sistema e pra resposta. "O limiar exato... dependem do modelo
-    # escolhido" (docs/13 §8) -- ajustar se o modelo mudar.
-    summary_context_chars: int = 12_000
+    # exata de token -- pareado com ollama_num_ctx acima (8192 tokens ≈
+    # 24.000 caracteres em pt-BR, com folga pro prompt de sistema e pra
+    # resposta). "O limiar exato... dependem do modelo escolhido" (docs/13
+    # §8) -- ajustar os dois juntos se o modelo ou a janela mudarem.
+    summary_context_chars: int = 24_000
     summary_block_overlap_segments: int = 3

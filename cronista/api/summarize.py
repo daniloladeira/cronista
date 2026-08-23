@@ -130,7 +130,11 @@ def _nome_modelo(settings: Settings, provider: str) -> str:
 
 def _modelo(settings: Settings, provider: str) -> BaseChatModel:
     if provider == "ollama":
-        return ChatOllama(base_url=settings.ollama_base_url, model=settings.ollama_model)
+        return ChatOllama(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_model,
+            num_ctx=settings.ollama_num_ctx,
+        )
     if provider == "anthropic":
         return ChatAnthropic(api_key=settings.anthropic_api_key, model=settings.anthropic_model)
     raise ValueError(f"provedor de LLM desconhecido: {provider!r}")
@@ -140,11 +144,26 @@ def _texto_transcricao(segmentos: list[Segment]) -> str:
     return "\n".join(f"{s.speaker}: {s.text}" for s in segmentos)
 
 
+_PADRAO_TITULO = re.compile(
+    r"^\*{0,2}(?:#{1,6}\s*)+(" + "|".join(re.escape(s) for s in _SECOES) + r")\s*\**\s*$",
+    re.MULTILINE,
+)
+
+
+def _normalizar_titulos(markdown: str) -> str:
+    """O modelo varia a formatação do título da seção mesmo quando o
+    conteúdo está certo -- achado testando contra reunião real em
+    2026-08-22, três variantes diferentes no mesmo dia ("### Pauta",
+    "### ## Pauta", "**## Pauta**"). Em vez de perseguir cada variante
+    nova, normaliza qualquer título reconhecível (nível 1 a 6, com ou
+    sem negrito) pro nível 2 canônico, antes de validar. Isso é ruído de
+    formatação, não conteúdo -- a garantia real (docs/13-resumo.md §7:
+    nunca persistir resumo malformado) continua em _tem_quatro_secoes,
+    que ainda rejeita quando uma seção simplesmente não aparece."""
+    return _PADRAO_TITULO.sub(lambda m: f"## {m.group(1)}", markdown)
+
+
 def _tem_quatro_secoes(markdown: str) -> bool:
-    # `in markdown` sozinho aceitava "### Pauta" como se fosse "## Pauta"
-    # -- "## Pauta" é substring de "### Pauta" (achado testando de
-    # verdade contra Ollama real, não presumido). Precisa do título
-    # exatamente em nível 2, começando a linha.
     return all(
         re.search(rf"^## {re.escape(secao)}\b", markdown, re.MULTILINE) is not None
         for secao in _SECOES
@@ -241,6 +260,7 @@ def summarize(
         db.commit()
         raise
 
+    markdown = _normalizar_titulos(markdown)
     if not _tem_quatro_secoes(markdown):
         meeting.status = "summary_failed"
         db.commit()

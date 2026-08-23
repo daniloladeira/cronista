@@ -5,6 +5,7 @@ mockado -- a validação com Ollama de verdade fica pra etapa 3
 
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -169,14 +170,41 @@ def test_summarize_resposta_malformada_nao_persiste_e_marca_falha(
     assert meeting.summaries == []
 
 
-def test_summarize_titulo_em_nivel_errado_e_malformado(db_session: Session, monkeypatch) -> None:
-    # Regressão: "## Pauta" é substring de "### Pauta" -- achado testando
-    # contra Ollama real, o modelo às vezes usa nível 3. `in markdown`
-    # sozinho aceitava isso por engano; precisa do título exatamente em
-    # nível 2.
+@pytest.mark.parametrize(
+    "transformacao",
+    [
+        lambda s: re.sub(r"^## ", "### ", s, flags=re.MULTILINE),  # nível 3 puro
+        lambda s: re.sub(r"^## ", "### ## ", s, flags=re.MULTILINE),  # "###" colado na frente
+        lambda s: re.sub(r"^## (.+)$", r"**## \1**", s, flags=re.MULTILINE),  # negrito em volta
+    ],
+    ids=["nivel_tres", "cabecalho_duplicado", "negrito"],
+)
+def test_summarize_normaliza_variantes_de_titulo_e_aceita(
+    db_session: Session, monkeypatch, transformacao
+) -> None:
+    # Três variantes de formatação achadas testando contra reunião real
+    # no mesmo dia (2026-08-22) -- o modelo varia o nível de cabeçalho e
+    # o negrito mesmo quando o conteúdo está certo. Normaliza em vez de
+    # rejeitar (docs/13-resumo.md §5).
     meeting = _com_segmentos(db_session, _meeting())
-    resposta_nivel_errado = _RESUMO_VALIDO.replace("## ", "### ")
-    modelo = _ModeloFalso(resposta_nivel_errado)
+    resposta_com_ruido = transformacao(_RESUMO_VALIDO)
+    modelo = _ModeloFalso(resposta_com_ruido)
+    monkeypatch.setattr(summarize, "_modelo", lambda settings, provider: modelo)
+
+    resultado = summarize.summarize(db_session, meeting, _settings())
+
+    assert resultado.markdown == _RESUMO_VALIDO
+
+
+def test_summarize_secao_realmente_ausente_continua_malformada(
+    db_session: Session, monkeypatch
+) -> None:
+    # A tolerância de formatação não vira tolerância de conteúdo -- se
+    # uma seção não aparece de jeito nenhum (nem com título variante),
+    # continua malformado (docs/13-resumo.md §7).
+    meeting = _com_segmentos(db_session, _meeting())
+    resposta_incompleta = _RESUMO_VALIDO.split("## Pontos em aberto")[0]  # falta a última seção
+    modelo = _ModeloFalso(resposta_incompleta)
     monkeypatch.setattr(summarize, "_modelo", lambda settings, provider: modelo)
 
     with pytest.raises(summarize.RespostaMalformada):
