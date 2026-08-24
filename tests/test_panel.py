@@ -156,3 +156,61 @@ async def test_layout_nao_quebra_no_svg_exportado(monkeypatch: pytest.MonkeyPatc
     assert "Reunião A" in texto
     assert "Transcrição" in texto
     assert "Resumo" in texto
+
+
+@pytest.mark.asyncio
+async def test_api_fora_do_ar_ao_carregar_lista_notifica_sem_derrubar_o_app(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Achado real: API fora do ar derrubava o painel inteiro com um
+    # traceback bruto no terminal do usuário, em vez de avisar (RNF-U02).
+    def _falha() -> list[dict]:
+        raise api_client.ApiError("Não foi possível conectar à API.")
+
+    monkeypatch.setattr(api_client, "list_meetings", _falha)
+    avisos: list[str] = []
+    monkeypatch.setattr(panel.PanelApp, "notify", lambda self, msg, **kw: avisos.append(msg))
+
+    app = PanelApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+    assert avisos and "conectar" in avisos[0].lower()
+
+
+@pytest.mark.asyncio
+async def test_api_fora_do_ar_ao_abrir_reuniao_notifica_sem_derrubar_o_app(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(api_client, "list_meetings", lambda: _REUNIOES)
+
+    def _falha(meeting_id: str) -> dict:
+        raise api_client.ApiError("Não foi possível conectar à API.")
+
+    monkeypatch.setattr(api_client, "get_meeting", _falha)
+    avisos: list[str] = []
+    monkeypatch.setattr(panel.PanelApp, "notify", lambda self, msg, **kw: avisos.append(msg))
+
+    app = PanelApp(meeting_id="1")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+    assert avisos and "conectar" in avisos[0].lower()
+
+
+@pytest.mark.asyncio
+async def test_api_fora_do_ar_ao_buscar_notifica_sem_derrubar_o_app(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _falha(q: str, **kw: object) -> list[dict]:
+        raise api_client.ApiError("Não foi possível conectar à API.")
+
+    monkeypatch.setattr(api_client, "search", _falha)
+    avisos: list[str] = []
+    monkeypatch.setattr(panel.PanelApp, "notify", lambda self, msg, **kw: avisos.append(msg))
+
+    app = PanelApp(search_term="decisão")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+    assert avisos and "conectar" in avisos[0].lower()

@@ -105,11 +105,23 @@ class PanelApp(App[None]):
             self._abrir_reuniao(self._meeting_id_inicial)
 
     def _carregar_lista(self) -> None:
-        self._reunioes_na_lista = api_client.list_meetings()
+        try:
+            self._reunioes_na_lista = api_client.list_meetings()
+        except api_client.ApiError as exc:
+            # RNF-U02: erro é hora de clareza, não de estourar a tela toda
+            # com traceback (achado real: API fora do ar derrubava o
+            # painel inteiro com stack trace, em vez de avisar e deixar
+            # o usuário tentar de novo).
+            self.notify(str(exc), title="Erro", severity="error", timeout=8)
+            return
         self._preencher_lista()
 
     def _buscar(self, termo: str) -> None:
-        resultados = api_client.search(termo)
+        try:
+            resultados = api_client.search(termo)
+        except api_client.ApiError as exc:
+            self.notify(str(exc), title="Erro", severity="error", timeout=8)
+            return
         # Um resultado de busca é um trecho, não uma reunião -- agrupa por
         # reunião (mantendo a primeira ocorrência, já vem ordenado por
         # relevância) pra reaproveitar a mesma lista/seleção de sempre.
@@ -133,8 +145,12 @@ class PanelApp(App[None]):
             lista.append(item)
 
     def _abrir_reuniao(self, meeting_id: str) -> None:
-        reuniao = api_client.get_meeting(meeting_id)
-        segmentos = api_client.get_transcript(meeting_id)
+        try:
+            reuniao = api_client.get_meeting(meeting_id)
+            segmentos = api_client.get_transcript(meeting_id)
+        except api_client.ApiError as exc:
+            self.notify(str(exc), title="Erro", severity="error", timeout=8)
+            return
         self.query_one("#conteudo-transcricao", Static).update(_texto_transcricao(segmentos))
         self.query_one("#conteudo-resumo", Markdown).update(_markdown_resumo(reuniao))
 

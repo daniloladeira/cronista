@@ -34,7 +34,17 @@ app = typer.Typer(add_completion=False)
 _console = Console()
 _settings = ClientSettings()
 
+_DOURADO = "#DFB878"  # cor de identidade do sistema (docs/17-identidade-visual-cli.md §4)
+
 _COMANDOS_MINIMOS = [("r", "rec"), ("d", "devices"), ("s", "sync"), ("l", "login"), ("t", "list")]
+
+
+def _tabela(titulo: str) -> Table:
+    # Toda tabela do CLI passa por aqui -- achado real: as tabelas
+    # (devices, list, buscar) usavam a borda/cabeçalho padrão do Rich,
+    # sem nenhuma cor de identidade do sistema, mesma lacuna que o menu
+    # inicial tinha (docs/17 §4).
+    return Table(title=titulo, border_style=_DOURADO, header_style=f"bold {_DOURADO}", title_style=f"bold {_DOURADO}")
 
 
 def _tela_inicial_partes() -> list[Text]:
@@ -171,14 +181,14 @@ def sync() -> None:
 @app.command()
 def devices() -> None:
     """Lista dispositivos de entrada e saída (UC-02). Não precisa da API."""
-    entrada = Table(title="Entrada (microfone)")
+    entrada = _tabela("Entrada (microfone)")
     entrada.add_column("Nome")
     entrada.add_column("Padrão")
     for d in capture.list_input_devices():
         entrada.add_row(d.name, "sim" if d.is_default else "")
     _console.print(entrada)
 
-    saida = Table(title="Saída (usada via loopback para a trilha 'outros')")
+    saida = _tabela("Saída (usada via loopback para a trilha 'outros')")
     saida.add_column("Nome")
     saida.add_column("Padrão")
     for d in capture.list_output_devices():
@@ -369,7 +379,7 @@ def importar(
 
 
 def _tabela_reunioes(reunioes: list[dict], titulo: str) -> Table:
-    tabela = Table(title=titulo)
+    tabela = _tabela(titulo)
     tabela.add_column("Título")
     tabela.add_column("Estado")
     tabela.add_column("Início")
@@ -378,11 +388,19 @@ def _tabela_reunioes(reunioes: list[dict], titulo: str) -> Table:
     return tabela
 
 
+def _sai_com_erro_de_api(exc: api_client.ApiError) -> None:
+    typer.echo(f"Erro: {exc}", err=True)
+    raise typer.Exit(code=2 if exc.status_code == 401 else 3)
+
+
 @app.command(name="list")
 def list_() -> None:
     """Lista reuniões, e navega entre elas (UC-07, ADR-0016)."""
     if not _console.is_terminal:
-        _console.print(_tabela_reunioes(api_client.list_meetings(), "Reuniões"))
+        try:
+            _console.print(_tabela_reunioes(api_client.list_meetings(), "Reuniões"))
+        except api_client.ApiError as exc:
+            _sai_com_erro_de_api(exc)
         return
     panel.PanelApp().run()
 
@@ -391,8 +409,11 @@ def list_() -> None:
 def ler(meeting_id: str = typer.Argument(..., help="ID da reunião")) -> None:
     """Abre uma reunião já focada, com transcrição e resumo (UC-07, ADR-0016)."""
     if not _console.is_terminal:
-        reuniao = api_client.get_meeting(meeting_id)
-        segmentos = api_client.get_transcript(meeting_id)
+        try:
+            reuniao = api_client.get_meeting(meeting_id)
+            segmentos = api_client.get_transcript(meeting_id)
+        except api_client.ApiError as exc:
+            _sai_com_erro_de_api(exc)
         for s in segmentos:
             _console.print(f"[{s['timestamp']}] {s['speaker']}: {s['text']}")
         resumos = reuniao.get("summaries") or []
@@ -408,8 +429,11 @@ def buscar(termo: str = typer.Argument(..., help="Termo de busca")) -> None:
     """Busca por conteúdo em todas as transcrições, com stemming de
     português (UC-08, RF-23/24, ADR-0016)."""
     if not _console.is_terminal:
-        resultados = api_client.search(termo)
-        tabela = Table(title=f'Busca: "{termo}"')
+        try:
+            resultados = api_client.search(termo)
+        except api_client.ApiError as exc:
+            _sai_com_erro_de_api(exc)
+        tabela = _tabela(f'Busca: "{termo}"')
         tabela.add_column("Reunião")
         tabela.add_column("Instante")
         tabela.add_column("Falante")
