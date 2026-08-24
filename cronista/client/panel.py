@@ -18,6 +18,8 @@ from textual.widgets import Input, ListItem, ListView, Markdown, Static, TabbedC
 
 from cronista.client import api_client
 
+_DOURADO = "#DFB878"  # cor de identidade do sistema (docs/17-identidade-visual-cli.md §4)
+
 _SEM_TRANSCRICAO = "(sem transcrição ainda)"
 _SEM_RESUMO = "(sem resumo ainda)"
 
@@ -45,32 +47,46 @@ class PanelApp(App[None]):
     `HomeApp`, este painel não despacha pra outro comando ao sair, ele É
     o destino final da navegação (docs/11-cli.md §1-2)."""
 
-    CSS = """
-    Screen {
+    CSS = f"""
+    Screen {{
         layout: horizontal;
-    }
-    #lista {
+    }}
+    #lista {{
         width: 40;
-        border-right: solid $panel;
-    }
-    #lista ListItem {
+        border-right: solid {_DOURADO};
+    }}
+    #lista ListItem {{
         /* Título de reunião longo quebra em 2 linhas dentro do item --
         sem respiro embaixo, o item seguinte cola direto nele e as duas
         linhas parecem itens soltos, não um título de dois. Achado
         exportando SVG de verdade e lendo linha por linha, não só
         olhando por cima (ADR-0016). */
         margin-bottom: 1;
-    }
-    #leitura {
+    }}
+    #lista ListItem.-highlight {{
+        background: {_DOURADO};
+        color: #1A1200;
+    }}
+    #lista:focus ListItem.-highlight {{
+        background: {_DOURADO};
+        color: #1A1200;
+    }}
+    Underline > .underline--bar {{
+        color: {_DOURADO};
+    }}
+    #leitura {{
         width: 1fr;
-    }
-    #busca {
+    }}
+    #busca {{
         dock: bottom;
         display: none;
-    }
-    #busca.visivel {
+    }}
+    #busca.visivel {{
         display: block;
-    }
+    }}
+    #busca:focus {{
+        border: tall {_DOURADO};
+    }}
     """
 
     BINDINGS = [
@@ -103,6 +119,11 @@ class PanelApp(App[None]):
             self._carregar_lista()
         if self._meeting_id_inicial:
             self._abrir_reuniao(self._meeting_id_inicial)
+        # Sem isto, o foco inicial cai no Input de busca (escondido,
+        # display: none) em vez da lista -- achado real depurando por que
+        # o destaque dourado do item selecionado não aparecia na tela de
+        # abertura: nada estava com foco pra receber a classe -highlight.
+        self.query_one("#lista", ListView).focus()
 
     def _carregar_lista(self) -> None:
         try:
@@ -143,6 +164,12 @@ class PanelApp(App[None]):
             item = ListItem(Static(_rotulo_reuniao(reuniao)))
             item.data = reuniao["id"]  # type: ignore[attr-defined]
             lista.append(item)
+        if self._reunioes_na_lista:
+            # Sem isto, `index` fica None até o usuário apertar uma seta --
+            # nenhum item nasce destacado, então a cor dourada do cursor
+            # (achado real depurando por que não aparecia em tela) só se
+            # provaria depois de uma interação, nunca na abertura.
+            lista.index = 0
 
     def _abrir_reuniao(self, meeting_id: str) -> None:
         try:

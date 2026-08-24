@@ -13,7 +13,7 @@ import pytest
 from textual.widgets import ListView, Markdown, Static
 
 from cronista.client import api_client, panel
-from cronista.client.panel import PanelApp
+from cronista.client.panel import _DOURADO, PanelApp
 
 _REUNIOES = [
     {"id": "1", "title": "Reunião A", "status": "transcribed"},
@@ -44,6 +44,22 @@ async def test_lista_mostra_as_reunioes(monkeypatch: pytest.MonkeyPatch) -> None
     async with app.run_test():
         lista = app.query_one("#lista", ListView)
         assert len(lista.children) == 2
+
+
+@pytest.mark.asyncio
+async def test_lista_recebe_foco_e_primeiro_item_destacado_ao_abrir(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Achado real: o foco inicial caía no Input de busca (escondido) e
+    # nenhum item nascia com `index` definido -- a navegação por seta só
+    # funcionava depois de um Tab manual, e o destaque dourado do cursor
+    # (docs/17 §4) nunca aparecia na abertura.
+    monkeypatch.setattr(api_client, "list_meetings", lambda: _REUNIOES)
+
+    app = PanelApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        lista = app.query_one("#lista", ListView)
+        assert lista.has_focus
+        assert lista.index == 0
 
 
 @pytest.mark.asyncio
@@ -196,6 +212,26 @@ async def test_api_fora_do_ar_ao_abrir_reuniao_notifica_sem_derrubar_o_app(
         await pilot.pause()
 
     assert avisos and "conectar" in avisos[0].lower()
+
+
+@pytest.mark.asyncio
+async def test_lista_usa_a_cor_de_identidade_dourada(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Regressão: a lista usava a borda/destaque padrão do Textual, sem
+    # nenhuma cor de identidade do sistema (docs/17 §4) -- mesma lacuna
+    # que a tela inicial (home.py) tinha, corrigida à parte.
+    from textual.color import Color
+
+    monkeypatch.setattr(api_client, "list_meetings", lambda: _REUNIOES)
+
+    app = PanelApp()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        lista = app.query_one("#lista", ListView)
+        estilo, cor = lista.styles.border_right
+        assert estilo == "solid"
+        assert cor == Color.parse(_DOURADO)
+        primeiro_item = lista.children[0]
+        assert primeiro_item.styles.background == Color.parse(_DOURADO)
 
 
 @pytest.mark.asyncio
