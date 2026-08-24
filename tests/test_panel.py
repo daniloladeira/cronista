@@ -71,6 +71,11 @@ async def test_selecionar_reuniao_popula_transcricao_e_resumo(monkeypatch: pytes
 
 @pytest.mark.asyncio
 async def test_abre_ja_com_reuniao_focada_para_ler(monkeypatch: pytest.MonkeyPatch) -> None:
+    # on_mount carrega a lista geral mesmo com meeting_id_inicial (o painel
+    # de lista à esquerda continua populado) -- sem mockar list_meetings
+    # aqui, o teste tentava uma conexão de rede real (achado real: só deu
+    # pra ver depois que a API parou de estar sempre de pé no ambiente).
+    monkeypatch.setattr(api_client, "list_meetings", lambda: _REUNIOES)
     monkeypatch.setattr(api_client, "get_meeting", lambda meeting_id: _REUNIAO_DETALHE)
     monkeypatch.setattr(api_client, "get_transcript", lambda meeting_id: _SEGMENTOS)
 

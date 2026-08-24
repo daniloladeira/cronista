@@ -34,7 +34,7 @@ app = typer.Typer(add_completion=False)
 _console = Console()
 _settings = ClientSettings()
 
-_COMANDOS_MINIMOS = [("r", "rec"), ("d", "devices"), ("s", "sync"), ("l", "login")]
+_COMANDOS_MINIMOS = [("r", "rec"), ("d", "devices"), ("s", "sync"), ("l", "login"), ("t", "list")]
 
 
 def _tela_inicial_partes() -> list[Text]:
@@ -90,6 +90,8 @@ def _callback(ctx: typer.Context) -> None:
         usuario = typer.prompt("Usuario")
         senha = typer.prompt("Senha", hide_input=True)
         _do_login(usuario, senha)
+    elif chosen == "list":
+        list_()
 
 
 def _do_login(usuario: str, senha: str) -> None:

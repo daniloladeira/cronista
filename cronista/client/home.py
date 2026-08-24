@@ -22,11 +22,14 @@ from textual.widgets.option_list import Option
 
 from cronista.client import banner, session_info
 
+_DOURADO = "#DFB878"  # cor de identidade do sistema (docs/17-identidade-visual-cli.md §4)
+
 _COMMANDS = [
     ("rec", "rec — grava uma reunião"),
     ("devices", "devices — lista dispositivos de entrada e saída"),
     ("sync", "sync — reenvia reuniões pendentes"),
     ("login", "login — autentica e salva o token"),
+    ("list", "list — lista reuniões, ler transcrição e resumo"),
 ]
 
 
@@ -34,19 +37,27 @@ class HomeApp(App[str]):
     """`app.run()` devolve o id do comando escolhido, ou `None` se o
     usuário saiu sem escolher (Escape/q)."""
 
-    CSS = """
-    Screen {
+    CSS = f"""
+    Screen {{
         align: left top;
-    }
-    Vertical {
+    }}
+    Vertical {{
         width: auto;
         height: auto;
         padding: 1 2;
-    }
-    OptionList {
+    }}
+    OptionList {{
         width: auto;
         margin-top: 1;
-    }
+        border: round {_DOURADO};
+    }}
+    OptionList:focus {{
+        border: round {_DOURADO};
+    }}
+    OptionList > .option-list--option-highlighted {{
+        background: {_DOURADO};
+        color: #1A1200;
+    }}
     """
 
     BINDINGS = [("escape", "quit_sem_escolher", ""), ("q", "quit_sem_escolher", "")]
@@ -68,7 +79,9 @@ class HomeApp(App[str]):
         info.styles.width = max(banner.width(), 40) + 2
         with Vertical():
             yield info
-            yield OptionList(*(Option(label, id=cmd_id) for cmd_id, label in _COMMANDS))
+            comandos = OptionList(*(Option(label, id=cmd_id) for cmd_id, label in _COMMANDS))
+            comandos.border_title = "comandos"
+            yield comandos
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         self.exit(event.option.id)

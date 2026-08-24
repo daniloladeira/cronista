@@ -6,15 +6,42 @@ from __future__ import annotations
 
 import pytest
 
-from cronista.client.home import _COMMANDS, HomeApp
+from cronista.client.home import _DOURADO, _COMMANDS, HomeApp
 
 
 @pytest.mark.asyncio
-async def test_mostra_os_quatro_comandos() -> None:
+async def test_mostra_todos_os_comandos() -> None:
     app = HomeApp()
     async with app.run_test():
         option_list = app.query_one("OptionList")
         assert [o.id for o in option_list._options] == [cmd_id for cmd_id, _ in _COMMANDS]
+
+
+@pytest.mark.asyncio
+async def test_list_esta_entre_os_comandos() -> None:
+    # Regressão: list/ler/buscar/importar (Fases 5 e 6) foram adicionados
+    # como comandos sem nunca entrar na tela inicial -- só list entra
+    # aqui (não pede argumento; ler/buscar/importar exigem id/termo/
+    # caminho que a tela inicial não tem como coletar).
+    app = HomeApp()
+    async with app.run_test():
+        option_list = app.query_one("OptionList")
+        assert "list" in [o.id for o in option_list._options]
+
+
+@pytest.mark.asyncio
+async def test_lista_de_comandos_usa_a_cor_de_identidade_dourada() -> None:
+    # Regressão: a lista de comandos usava a borda cinza padrão do
+    # Textual, sem nenhuma cor de identidade do sistema (docs/17 §4).
+    from textual.color import Color
+
+    app = HomeApp()
+    async with app.run_test():
+        option_list = app.query_one("OptionList")
+        assert option_list.border_title == "comandos"
+        estilo, cor = option_list.styles.border_top
+        assert estilo == "round"
+        assert cor == Color.parse(_DOURADO)
 
 
 @pytest.mark.asyncio

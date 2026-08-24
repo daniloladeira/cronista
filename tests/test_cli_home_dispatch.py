@@ -94,3 +94,16 @@ def test_menu_escolhendo_login_prompta_e_chama_do_login(monkeypatch):
     cli._callback(MagicMock(invoked_subcommand=None))
 
     do_login.assert_called_once_with("valor", "valor")
+
+
+def test_menu_escolhendo_list_chama_o_comando_list(monkeypatch):
+    _prepara(monkeypatch, "list")
+    fake_list = MagicMock()
+    monkeypatch.setattr(cli, "list_", fake_list)
+    monkeypatch.setattr(cli, "rec", MagicMock())
+    monkeypatch.setattr(cli, "devices", MagicMock())
+    monkeypatch.setattr(cli, "sync", MagicMock())
+
+    cli._callback(MagicMock(invoked_subcommand=None))
+
+    fake_list.assert_called_once()

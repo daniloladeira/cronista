@@ -1,6 +1,6 @@
 # Identidade Visual e Animação do CLI
 
-> **Versão:** 1.6 · **Última atualização:** 2026-08-19
+> **Versão:** 1.7 · **Última atualização:** 2026-08-23
 > Decisões de biblioteca: [ADR-0015](adr/0015-rich-como-apresentacao-cli.md) (Rich, comandos que rodam e terminam), [ADR-0016](adr/0016-textual-para-navegacao.md) (Textual, painel navegável de `list`/`ler`/`buscar`).
 > Este documento trata da parte em Rich — banner, indicador de sinal, spinners. O painel Textual ganha especificação visual própria quando a Fase 5 chegar.
 > **Este documento não introduz requisito novo.** Especifica como RF-05, RNF-U01, RNF-U02 e RNF-U03 se manifestam na tela. Se algum dia divergir de [11-cli.md](11-cli.md), aquele documento é quem define comportamento; este define aparência.
@@ -109,6 +109,8 @@ Duas tentativas antes desta, ambas testadas de verdade no terminal e descartadas
 **Fallback por largura de terminal**, mesmo padrão do `Splash.tsx` do torlink (`showLogo = cols >= LOGO_WIDTH + 2`): banner grande só se couber; terminal estreito cai pro nome simples em cor de identidade; saída não-interativa (redirecionada) cai pro texto puro, sem código ANSI.
 
 **Aparece toda vez que `cronista` roda sem subcomando.** O throttle original ("só na primeira execução do dia", com marcador em `DATA_ROOT/.banner_shown`) fazia sentido pra uma animação decorativa que se repete sem propósito — deixou de fazer sentido quando o banner virou a tela de entrada de um **menu funcional** (ADR-0016, seção "segunda tentativa, funcionou"): repetir a cada `cronista` é o comportamento certo agora, não ruído. O marcador e as funções `should_show_today`/`mark_shown_today` foram removidos.
+
+**Achado real (2026-08-23): a lista de comandos do menu inicial nunca recebeu a cor de identidade, e ficou desatualizada.** `_COMMANDS` em `home.py` foi escrito na Fase 2 e nunca atualizado quando `list`/`ler`/`buscar` (Fase 5) e `importar` (Fase 6) entraram — `list` (que não exige argumento) foi adicionado; `ler`/`buscar`/`importar` continuam de fora de propósito, por exigirem um id/termo/caminho que o menu não tem como coletar. A `OptionList` também usava a borda cinza padrão do Textual, sem nenhuma cor do sistema — corrigido com `border: round #DFB878` (a mesma técnica que a caixa "Commands" do próprio Typer usa por baixo, via Rich, e que o ADR-0016 já registrava como "a ajuda do Typer" na tentativa anterior) e o item selecionado destacado em dourado sólido. Validado com `App.export_screenshot()` antes de qualquer coisa nova chegar no `cli.py`, mesma regra da nota "segunda tentativa, funcionou" do ADR-0016.
 
 ## 8. Plano de teste das artes
 
