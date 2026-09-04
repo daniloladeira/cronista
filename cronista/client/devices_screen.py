@@ -50,13 +50,17 @@ class DevicesApp(App[None]):
     Screen {{
         align: left top;
     }}
+    #titulo {{
+        /* Largura total da tela, não só do bloco dos painéis -- a régua
+        de baixo tem que ir de ponta a ponta, mesmo efeito do cabeçalho
+        de `cronista rec` (pedido explícito do usuário). */
+        width: 100%;
+        padding: 1 2;
+    }}
     Vertical {{
         width: auto;
         height: auto;
-        padding: 1 2;
-    }}
-    #titulo {{
-        margin-bottom: 1;
+        padding: 0 2 1 2;
     }}
     #entrada, #saida {{
         border: round {_DOURADO};
@@ -86,8 +90,8 @@ class DevicesApp(App[None]):
         entrada.border_title = "entrada (microfone)"
         saida = Static(_tabela_dispositivos(capture.list_output_devices()), id="saida")
         saida.border_title = "saída (loopback)"
+        yield Static(id="titulo")
         with Vertical():
-            yield Static(id="titulo")
             yield entrada
             yield saida
 

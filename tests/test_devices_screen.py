@@ -60,6 +60,23 @@ async def test_usa_a_cor_de_identidade_dourada(monkeypatch: pytest.MonkeyPatch) 
 
 
 @pytest.mark.asyncio
+async def test_regua_do_titulo_vai_de_ponta_a_ponta(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Achado real: a régua sob "cronista" nascia só tão larga quanto os
+    # painéis de dispositivo (dentro do mesmo Vertical de largura
+    # automática) -- o usuário pediu o mesmo efeito do cabeçalho do
+    # `rec`, que vai de ponta a ponta da tela, não só do bloco abaixo.
+    monkeypatch.setattr(capture, "list_input_devices", lambda: _ENTRADA)
+    monkeypatch.setattr(capture, "list_output_devices", lambda: _SAIDA)
+
+    app = DevicesApp()
+    async with app.run_test(size=(100, 25)) as pilot:
+        await pilot.pause()
+        titulo = app.query_one("#titulo")
+        entrada = app.query_one("#entrada")
+        assert titulo.size.width > entrada.size.width + 10
+
+
+@pytest.mark.asyncio
 async def test_escape_sai(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(capture, "list_input_devices", lambda: [])
     monkeypatch.setattr(capture, "list_output_devices", lambda: [])
