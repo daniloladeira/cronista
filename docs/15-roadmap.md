@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Versão:** 1.3 · **Última atualização:** 2026-08-23
+> **Versão:** 1.4 · **Última atualização:** 2026-09-04
 
 ## 1. Ordem e critério
 
@@ -188,7 +188,11 @@ Política por idade, compressão ou remoção de áudio, exclusão em cascata co
 
 **Exclusão (RF-30)**: `DELETE /meetings/{id}` (`cronista/api/routes/meetings.py`) — 404 se não existe; remove o diretório de áudio (`shutil.rmtree`), idempotente se já ausente (FE-02); erro removendo o arquivo não apaga o registro do banco (FE-03); sucesso apaga o registro, cascade do Postgres cuida do resto (RN-05), `204`. `cronista excluir <id>` mostra o que será removido e pede confirmação explícita (`typer.confirm`) antes de chamar a API — recusado, nada é chamado (FE-01/CT-32).
 
-**Falta pra fechar a Fase 7**: validar `DELETE /meetings/{id}` contra uma das reuniões sintéticas reais que sobraram da Fase 6 (`entrevista-cliente-x`) — bloqueado no momento pelo Docker Desktop, que caiu três vezes nesta sessão e não voltou a subir na última tentativa. Suíte de testes (278 casos, banco de teste real) cobre CT-30/31/32 e as três salvaguardas (FE-01 a FE-03) sem depender do Docker estar de pé.
+Validado contra dado real de dev, depois do Docker voltar: `DELETE` numa das reuniões sintéticas que sobraram testando a Fase 6 (`entrevista-cliente-x`, `2026-08-23_0237_...`) confirmou remoção completa — `204`, `GET` seguinte devolve `404`, diretório sumiu do disco.
+
+**Achado real no caminho, sem relação com o código desta fase**: a porta 8000 da API do cronista colidia com outro projeto (`sisgei-backend-web-1`) rodando ao mesmo tempo na mesma máquina — o usuário estava trabalhando nos dois simultaneamente. Migrada pra 8001 (`.env`, `README.md`, `docs/07-arquitetura.md`, `worker_api_base_url` em `core/config.py`). Essa colisão, combinada com o Docker Desktop caindo três vezes na sessão, foi a causa raiz de uma reunião real de ~77 minutos ficar presa em `pendente_envio` no cliente sem nunca chegar à API — `cronista sync`, depois que a API voltou a responder na porta certa, reconciliou e o worker pegou a fila normalmente. RN-08/ADR-0012 funcionaram exatamente como desenhado: o áudio nunca esteve em risco, só o registro remoto atrasou.
+
+Fase 7 fechada.
 
 ### Fase 8 · Interface desktop
 

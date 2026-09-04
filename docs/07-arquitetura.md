@@ -96,7 +96,7 @@ flowchart TB
     subgraph PC["Notebook · Windows 11"]
         subgraph WinProc["Processos Windows"]
             CLIP["Cliente / CLI"]
-            APIP["API FastAPI<br/>uvicorn :8000"]
+            APIP["API FastAPI<br/>uvicorn :8001"]
             OLLP["Ollama :11434"]
         end
         FS[("%LOCALAPPDATA%\\cronista<br/>recordings/")]

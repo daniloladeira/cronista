@@ -62,7 +62,7 @@ class WorkerSettings(DatabaseSettings):
     # medido, não presumido), autenticada com um token de serviço de
     # vida longa (scripts/mint_worker_token.py), não com login de usuário.
     worker_auto_summarize: bool = False
-    worker_api_base_url: str = "http://host.docker.internal:8000/api/v1"
+    worker_api_base_url: str = "http://host.docker.internal:8001/api/v1"
     worker_service_token: str = ""
 
     # Retenção de áudio (UC-09, RF-29, docs/08-modelo-de-dados.md §8).
