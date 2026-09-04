@@ -4,6 +4,7 @@ Ver docs/09-api.md e UC-10.
 
 from __future__ import annotations
 
+import shutil
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -193,6 +194,37 @@ def rename_meeting(meeting_id: UUID, body: MeetingRename, db: Session = Depends(
     db.commit()
     db.refresh(meeting)
     return meeting
+
+
+@router.delete("/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_meeting(
+    meeting_id: UUID, db: Session = Depends(get_db), data_root: str = Depends(get_data_root)
+) -> None:
+    """RF-30, UC-09: remove a reunião e tudo que dela deriva. A
+    confirmação (FE-01) é responsabilidade do cliente -- este endpoint,
+    uma vez chamado, remove sem mais perguntas, como qualquer DELETE."""
+    meeting = db.get(Meeting, meeting_id)
+    if meeting is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reunião não encontrada.")
+
+    diretorio = Path(data_root) / RECORDINGS_DIRNAME / meeting.audio_dir
+    try:
+        shutil.rmtree(diretorio)
+    except FileNotFoundError:
+        pass  # FE-02: diretório já ausente, remoção é idempotente.
+    except OSError as exc:
+        # FE-03: não apaga o registro sem confirmar que o áudio saiu do
+        # disco, senão a próxima consulta acha uma reunião "removida"
+        # com arquivo ainda ocupando espaço, sem jeito de saber disso.
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR, f"Falha removendo áudio em {diretorio}: {exc}"
+        ) from exc
+
+    # tracks/segments/summaries têm ForeignKey(..., ondelete="CASCADE")
+    # (core/models.py) -- o Postgres cuida da cascata (RN-05), não é
+    # preciso apagar cada tabela na mão aqui.
+    db.delete(meeting)
+    db.commit()
 
 
 @router.post(

@@ -65,6 +65,23 @@ class WorkerSettings(DatabaseSettings):
     worker_api_base_url: str = "http://host.docker.internal:8000/api/v1"
     worker_service_token: str = ""
 
+    # Retenção de áudio (UC-09, RF-29, docs/08-modelo-de-dados.md §8).
+    # Desligado por padrão -- mesmo espírito de worker_auto_summarize,
+    # não presume que todo mundo quer perder qualidade/áudio original
+    # sem pedir. keep_audio_days conta a partir de started_at (idade da
+    # reunião, não de quando o registro foi criado).
+    worker_retention_enabled: bool = False
+    keep_audio_days: int = 90
+    audio_policy: str = "compress"  # "compress" (Opus) ou "delete"
+    # 16k medido de verdade (não presumido): ~9,1 MB/hora contra os
+    # "~3 MB/hora" que docs/08 §8 estimava -- o doc corrigido documenta
+    # a medição real. Ainda assim ~12x menor que WAV (~115 MB/hora por
+    # trilha, RN-09), e 16kbps é o piso comum pra Opus soar inteligível
+    # em voz (abaixo disso a qualidade cai rápido demais pra valer o
+    # espaço poupado, sendo esta uma cópia de segurança, não a fonte
+    # primária -- a transcrição já é permanente, RN-04).
+    opus_bitrate: str = "16k"
+
 
 class Settings(DatabaseSettings):
     """Configuração completa, usada pela API (ADR-0011)."""

@@ -178,6 +178,18 @@ Política por idade, compressão ou remoção de áudio, exclusão em cascata co
 
 **Pronto quando:** áudio antigo é tratado conforme a política e reunião não transcrita **nunca** é tocada.
 
+**Fase barata por construção, mesmo espírito da Fase 6.** `Meeting.audio_state` (`original`/`compressed`/`removed`) já existia desde a migração inicial (ADR-0007: abstrair cedo), e `tracks`/`segments`/`summaries` já tinham `ForeignKey(..., ondelete="CASCADE")` — apagar o registro `Meeting` já cascade a nível de Postgres. Zero migração de schema nesta fase.
+
+**Retenção (RF-29)**: `cronista/worker/retention.py`, `apply_retention()`, chamada pelo worker (não pela API — mesmo padrão de `recover_interrupted`/`claim_next_meeting`, acesso direto a banco e disco, sem round-trip HTTP como `trigger_pending_summaries` precisa fazer por causa da VRAM do LLM). Seleciona `status IN ('transcribed', 'summarized')` AND `audio_state == 'original'` AND `started_at` mais velho que `keep_audio_days` — o próprio filtro de status já é a salvaguarda do CT-30. `audio_policy = compress` converte cada trilha pra Opus via ffmpeg; `delete` remove o arquivo. Nunca toca `Segment`/`Summary` (RN-04).
+
+**Achado real, não presumido: o bitrate do Opus.** `docs/08-modelo-de-dados.md` §8 estimava "~3 MB/hora". Medido de verdade (WAV sintético de 60s, várias taxas): 16kbps rendeu **~9,1 MB/hora**, não ~3. Bitrates mais baixos chegam perto do valor original (6kbps ≈ 2,5 MB/hora), mas 16kbps é o piso comum pra Opus soar inteligível em voz — abaixo disso a qualidade cai rápido demais pra valer a economia, sendo esta uma cópia de segurança atrás de uma transcrição já permanente (RN-04), não a fonte primária. Ficou com 16kbps; o doc de modelo de dados foi corrigido pra refletir a medição real, não a estimativa original.
+
+**Correção de infraestrutura no caminho**: a porta do Postgres do cronista (5433) colidiu com outro projeto do usuário que passou a usar a mesma porta no host. Resolvido migrando o cronista pra 5434 (`.env`, `POSTGRES_PORT`/`DATABASE_URL`), sem tocar no outro projeto.
+
+**Exclusão (RF-30)**: `DELETE /meetings/{id}` (`cronista/api/routes/meetings.py`) — 404 se não existe; remove o diretório de áudio (`shutil.rmtree`), idempotente se já ausente (FE-02); erro removendo o arquivo não apaga o registro do banco (FE-03); sucesso apaga o registro, cascade do Postgres cuida do resto (RN-05), `204`. `cronista excluir <id>` mostra o que será removido e pede confirmação explícita (`typer.confirm`) antes de chamar a API — recusado, nada é chamado (FE-01/CT-32).
+
+**Falta pra fechar a Fase 7**: validar `DELETE /meetings/{id}` contra uma das reuniões sintéticas reais que sobraram da Fase 6 (`entrevista-cliente-x`) — bloqueado no momento pelo Docker Desktop, que caiu três vezes nesta sessão e não voltou a subir na última tentativa. Suíte de testes (278 casos, banco de teste real) cobre CT-30/31/32 e as três salvaguardas (FE-01 a FE-03) sem depender do Docker estar de pé.
+
 ### Fase 8 · Interface desktop
 
 PySide6 com ícone na bandeja, sobre a mesma API. Terá especificação própria.

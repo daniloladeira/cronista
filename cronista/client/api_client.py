@@ -56,6 +56,16 @@ def _patch(path: str, json_body: dict, access_token: str | None = None, timeout:
         ) from exc
 
 
+def _delete(path: str, access_token: str | None = None, timeout: float = 10.0) -> httpx2.Response:
+    headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
+    try:
+        return httpx2.delete(f"{settings.api_base_url}{path}", headers=headers, timeout=timeout)
+    except httpx2.ConnectError as exc:
+        raise ApiError(
+            "Não foi possível conectar à API. Verifique se o container está no ar."
+        ) from exc
+
+
 def _raise_for_status(resp: httpx2.Response) -> None:
     try:
         resp.raise_for_status()
@@ -130,6 +140,23 @@ def _authed_patch(path: str, json_body: dict, timeout: float = 10.0) -> dict:
     return resp.json()
 
 
+def _authed_delete(path: str, timeout: float = 10.0) -> None:
+    """DELETE autenticado com renovação silenciosa -- mesmo padrão de
+    `_authed_patch` (docs/11-cli.md §3). Sem `.json()` no retorno: 204
+    não tem corpo."""
+    tokens = token_store.load_tokens()
+    if tokens is None:
+        raise ApiError("Não autenticado. Rode `cronista login`.", status_code=401)
+
+    resp = _delete(path, tokens["access_token"], timeout=timeout)
+    if resp.status_code == 401:
+        new_access_token = refresh(tokens["refresh_token"])
+        token_store.save_tokens(new_access_token, tokens["refresh_token"])
+        resp = _delete(path, new_access_token, timeout=timeout)
+
+    _raise_for_status(resp)
+
+
 def create_meeting(payload: dict) -> dict:
     return _authed_post("/meetings", payload)
 
@@ -171,6 +198,12 @@ def get_transcript(meeting_id: object) -> list[dict]:
 def rename_meeting(meeting_id: object, title: str) -> dict:
     """UC-07."""
     return _authed_patch(f"/meetings/{meeting_id}", {"title": title})
+
+
+def delete_meeting(meeting_id: object) -> None:
+    """RF-30, UC-09. A confirmação é responsabilidade de quem chama
+    (CLI) -- esta função, uma vez chamada, remove sem mais perguntas."""
+    _authed_delete(f"/meetings/{meeting_id}")
 
 
 def search(

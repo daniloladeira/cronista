@@ -50,8 +50,9 @@ services:
         condition: service_healthy
     environment:
       # NÃO reaproveitar o DATABASE_URL do .env: aquele aponta pro host
-      # (127.0.0.1:5433, a porta remapeada). Dentro da rede do compose, o
-      # worker fala com o serviço "db" na porta interna do Postgres (5432).
+      # (127.0.0.1:${POSTGRES_PORT}, a porta remapeada). Dentro da rede do
+      # compose, o worker fala com o serviço "db" na porta interna do
+      # Postgres (5432).
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       # Idem: dentro do container a raiz do acervo é o ponto de montagem
       # abaixo, não o caminho do Windows que está em DATA_ROOT no .env

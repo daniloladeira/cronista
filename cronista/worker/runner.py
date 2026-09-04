@@ -17,6 +17,7 @@ from cronista.core.config import RECORDINGS_DIRNAME, WorkerSettings
 from cronista.core.models import Meeting, Segment
 from cronista.worker.merge import merge_tracks
 from cronista.worker.model_manager import ModelManager, is_out_of_memory
+from cronista.worker.retention import apply_retention
 from cronista.worker.transcription import transcribe_track
 
 logger = logging.getLogger(__name__)
@@ -207,4 +208,7 @@ def run_forever(
             if not model_manager.is_loaded():
                 with session_factory() as session:
                     trigger_pending_summaries(session, settings)
+            if settings.worker_retention_enabled:
+                with session_factory() as session:
+                    apply_retention(session, settings)
             time.sleep(settings.worker_poll_interval_seconds)

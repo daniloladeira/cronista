@@ -445,5 +445,34 @@ def buscar(termo: str = typer.Argument(..., help="Termo de busca")) -> None:
     panel.PanelApp(search_term=termo).run()
 
 
+@app.command()
+def excluir(meeting_id: str = typer.Argument(..., help="ID da reunião")) -> None:
+    """Remove uma reunião e tudo que dela deriva, com confirmação
+    (UC-09, RF-30)."""
+    try:
+        reuniao = api_client.get_meeting(meeting_id)
+    except api_client.ApiError as exc:
+        _sai_com_erro_de_api(exc)
+
+    n_trilhas = len(reuniao.get("tracks") or [])
+    n_resumos = len(reuniao.get("summaries") or [])
+    typer.echo(
+        f"Reunião: {reuniao['title']} ({n_trilhas} trilha(s), {n_resumos} resumo(s)). "
+        "Isso remove transcrição, resumos e áudio -- não tem como desfazer."
+    )
+    if not typer.confirm("Remover permanentemente?"):
+        # FE-01/CT-32: recusado, nada é removido -- a API nem chega a
+        # ser chamada.
+        typer.echo("Nada foi removido.")
+        return
+
+    try:
+        api_client.delete_meeting(meeting_id)
+    except api_client.ApiError as exc:
+        _sai_com_erro_de_api(exc)
+
+    typer.echo("Reunião removida.")
+
+
 if __name__ == "__main__":
     app()
