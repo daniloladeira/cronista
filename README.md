@@ -111,7 +111,7 @@ A distro sobe, o systemd inicia o Docker e os containers voltam sozinhos (`resta
 **A API não está no compose** — sobe à parte:
 
 ```bash
-uvicorn cronista.api.main:app --host 127.0.0.1 --port 8001
+uvicorn cronista.api.main:app --host 127.0.0.1 --port 8000
 ```
 
 Para derrubar tudo: `wsl --shutdown`.
