@@ -26,7 +26,7 @@ from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
-from cronista.client.colors import lerp_color
+from cronista.client.colors import shimmer_position, shimmer_text
 
 VOCE_COLOR = "#DFB878"  # dourado — cor principal do sistema
 OUTROS_COLOR = "#A6A6A6"  # cinza neutro, sem calor, de propósito
@@ -187,26 +187,13 @@ class SignalBar:
             text.append(_THIN_BLOCKS[idx], style=_tone(color, clamped))
         return text
 
-    def _shimmer_position(self) -> float:
-        """Centro do brilho, em índice de caractere de `_BANNER_WORD`.
-        Roda num ciclo varredura+pausa; fora da palavra durante a pausa,
-        pra segurar um instante no dourado sólido antes de repetir."""
-        cycle = _SWEEP_SECONDS + _PAUSE_BETWEEN_SWEEPS
-        elapsed = (time.monotonic() - self._banner_started_at) % cycle
-        if elapsed > _SWEEP_SECONDS:
-            return -999.0
-        span = len(_BANNER_WORD) + 2 * _FLASH_WIDTH
-        return -_FLASH_WIDTH + span * (elapsed / _SWEEP_SECONDS)
-
     def render_banner(self) -> Group:
         """Nome "cronista" acima da régua, com um brilho branco varrendo o
         dourado em loop (docs/17-identidade-visual-cli.md §7)."""
-        position = self._shimmer_position()
-        word = Text()
-        for i, ch in enumerate(_BANNER_WORD):
-            distance = abs(i - position)
-            intensity = max(0.0, 1.0 - distance / _FLASH_WIDTH)
-            word.append(ch, style=f"bold {lerp_color(VOCE_COLOR, _FLASH_COLOR, intensity)}")
+        position = shimmer_position(
+            self._banner_started_at, len(_BANNER_WORD), _FLASH_WIDTH, _SWEEP_SECONDS, _PAUSE_BETWEEN_SWEEPS
+        )
+        word = shimmer_text(_BANNER_WORD, position, VOCE_COLOR, _FLASH_COLOR, _FLASH_WIDTH)
         return Group(word, Rule(style=VOCE_COLOR))
 
     def render_header(self) -> Table:

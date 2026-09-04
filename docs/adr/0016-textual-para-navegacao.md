@@ -55,3 +55,11 @@ O menu inicial navegável (`cronista/client/home.py`, `HomeApp`) foi refeito e d
 2. **Fundo preto (`#121212`) onde antes não tinha nenhum.** Era o tema escuro padrão do Textual, que pinta a tela inteira — diferente do resto do app, que só imprime, sem fundo próprio. Corrigido com `App(ansi_color=True)`, que usa a paleta/fundo do terminal real em vez do tema fixo.
 
 `session_info.py` foi extraído pra conteúdo (banner, subtítulo, categorias, usuário/máquina) compartilhado entre o menu navegável e o fallback estático (fora de terminal interativo) — as duas telas mostram o mesmo texto, só a lista de comandos embaixo muda de forma.
+
+## Nota (2026-09-04): o gatilho de reversão disparou, pra `devices`
+
+O próprio gatilho de reversão deste ADR previu isso: *"se o usuário frequentemente esquecer se um comando abre painel ou só imprime e sai — reconsiderar unificar tudo em um único modelo"*. Aconteceu de verdade — o usuário notou duas vezes, sem eu perguntar, que `cronista devices` "fechava sozinho" (imprimia e o processo terminava) e não parecia ter o mesmo design do resto (borda reta do Rich, sem a cor de identidade dourada que `list`/`ler`/`buscar` já usavam).
+
+**Resposta, deliberadamente contida**: só `devices` absorvido pro modelo de tela persistente (`cronista/client/devices_screen.py`, `DevicesApp`), não uma reversão geral. `rec` continua fora de qualquer loop de evento — ADR-0006 protege isso especificamente por ser a única operação irreversível do sistema, e essa razão não mudou. `login`/`sync` não foram questionados, ficam como comandos que rodam e terminam até (se algum dia) o mesmo gatilho disparar pra eles.
+
+Achado extra no caminho, mesma disciplina de sempre (exportar SVG antes de integrar): a primeira versão da tela colocava a `rich.Table` (com sua própria borda reta) dentro do painel Textual já arredondado — uma caixa dentro da outra. O usuário viu o resultado renderizado e apontou. Corrigido com `Table(box=None)`: só o painel externo emoldura, o conteúdo interno é texto alinhado, sem moldura própria.

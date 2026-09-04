@@ -17,6 +17,7 @@ from cronista.client import (
     api_client,
     capture,
     conversion,
+    devices_screen,
     home,
     naming,
     panel,
@@ -181,19 +182,22 @@ def sync() -> None:
 @app.command()
 def devices() -> None:
     """Lista dispositivos de entrada e saída (UC-02). Não precisa da API."""
-    entrada = _tabela("Entrada (microfone)")
-    entrada.add_column("Nome")
-    entrada.add_column("Padrão")
-    for d in capture.list_input_devices():
-        entrada.add_row(d.name, "sim" if d.is_default else "")
-    _console.print(entrada)
+    if not _console.is_terminal:
+        entrada = _tabela("Entrada (microfone)")
+        entrada.add_column("Nome")
+        entrada.add_column("Padrão")
+        for d in capture.list_input_devices():
+            entrada.add_row(d.name, "sim" if d.is_default else "")
+        _console.print(entrada)
 
-    saida = _tabela("Saída (usada via loopback para a trilha 'outros')")
-    saida.add_column("Nome")
-    saida.add_column("Padrão")
-    for d in capture.list_output_devices():
-        saida.add_row(d.name, "sim" if d.is_default else "")
-    _console.print(saida)
+        saida = _tabela("Saída (usada via loopback para a trilha 'outros')")
+        saida.add_column("Nome")
+        saida.add_column("Padrão")
+        for d in capture.list_output_devices():
+            saida.add_row(d.name, "sim" if d.is_default else "")
+        _console.print(saida)
+        return
+    devices_screen.DevicesApp().run()
 
 
 @app.command()
