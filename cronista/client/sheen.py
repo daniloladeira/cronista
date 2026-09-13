@@ -1,14 +1,11 @@
-"""Matemática do brilho que varre uma barra de progresso, portada do
-projeto torlink (`src/ui/sheen.ts`, `baairon/torlink`) — sem consumidor
-ainda. Registrado aqui pra quando a barra de progresso da transcrição
-existir (docs/17-identidade-visual-cli.md §3: "Ainda não implementado;
-registrado aqui para não ser esquecido quando a Fase 3 chegar").
+"""Matemática do brilho que varre uma barra de progresso -- SEM
+CONSUMIDOR AINDA, registrado pra quando a barra de progresso da
+transcrição existir (docs/17-identidade-visual-cli.md §3). Não apagar
+como código morto sem checar essa doc primeiro.
 
-O brilho é um sino de cosseno que varre as células preenchidas. A posição
-avança uma fração de SHEEN_SPEED a cada quadro, então o pico desliza entre
-células (intensidade interpolada) em vez de pular uma célula inteira por
-vez — mas as células continuam discretas (pixelizadas), mesmo padrão do
-medidor de sinal (docs/17 §6).
+Sino de cosseno varrendo células discretas; a posição avança uma fração
+de SHEEN_SPEED por quadro, o pico desliza entre células (intensidade
+interpolada) em vez de pular uma célula inteira por vez.
 """
 
 from __future__ import annotations

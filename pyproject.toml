@@ -13,7 +13,6 @@ dependencies = [
     "httpx2>=2.10",  # httpx está sem manutenção desde 2024; testclient do Starlette exige httpx2
     "rich>=13.9",
     "pyfiglet>=1.0",  # banner de abertura, docs/17-identidade-visual-cli.md §7
-    "textual>=1.0",  # ADR-0016: navegação (menu inicial, e list/ler/buscar na Fase 5)
     # API e autenticação (ADR-0010, ADR-0011)
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",

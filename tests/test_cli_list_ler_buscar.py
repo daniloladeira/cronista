@@ -1,8 +1,8 @@
 """Testes do fallback não-interativo de `list`/`ler`/`buscar` (fora de
-terminal, mesmo caminho que `CliRunner` sempre exercita -- o painel
-Textual em si é testado em tests/test_panel.py). Foco aqui: a API fora
-do ar tem que sair com mensagem e código de saída, não um traceback cru
-(achado real, RNF-U02)."""
+terminal, mesmo caminho que `CliRunner` sempre exercita -- o painel de
+navegação em si, hoje `cronista-tui` (ADR-0017), não é testado por aqui).
+Foco aqui: a API fora do ar tem que sair com mensagem e código de saída,
+não um traceback cru (achado real, RNF-U02)."""
 
 from __future__ import annotations
 

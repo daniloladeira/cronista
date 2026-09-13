@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, TypedDict
 
 from cronista.client import local_state, registration
-from cronista.core.config import RECORDINGS_DIRNAME
+from cronista.core.paths import RECORDINGS_DIRNAME
 
 _MEETING_FIELDS = (
     "id",

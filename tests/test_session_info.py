@@ -1,5 +1,5 @@
-"""Testes de cronista.client.session_info -- compartilhado entre a tela
-estática (cli.py) e o menu navegável (home.py)."""
+"""Testes de cronista.client.session_info -- usado pela tela estática de
+`cronista` sem comando, fora de terminal interativo (`cli.py`)."""
 
 from __future__ import annotations
 

@@ -1,7 +1,7 @@
 # Linha de Comando · Contrato
 
 > **Versão:** 1.6 · **Última atualização:** 2026-09-04
-> Decisões correspondentes: [0006](adr/0006-cli-antes-de-desktop.md), [0015](adr/0015-rich-como-apresentacao-cli.md), [0016](adr/0016-textual-para-navegacao.md)
+> Decisões correspondentes: [0006](adr/0006-cli-antes-de-desktop.md), [0015](adr/0015-rich-como-apresentacao-cli.md), [0016](adr/0016-textual-para-navegacao.md), [0017](adr/0017-ink-para-navegacao.md)
 
 ## 1. Papel
 
@@ -9,9 +9,9 @@ A linha de comando é a primeira interface, e serve de contrato para a interface
 
 O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 
-**O CLI tem dois modelos de interação, não um só (ADR-0016).** A maioria dos comandos roda e termina — decorados com Rich (ADR-0015). `list`, `ler` e `buscar` convergem numa experiência navegável e persistente com Textual, porque o usuário pediu explicitamente poder navegar pelo acervo, ler transcrição trocando de aba e percorrer busca sem comando novo a cada passo. `rec` **fica de fora dessa navegação** de propósito — é a única operação irreversível do sistema (ADR-0012), e misturar isso com loop de evento foi exatamente o que o ADR-0006 evitou desde o início.
+**O CLI tem dois modelos de interação, não um só (ADR-0016).** A maioria dos comandos roda e termina — decorados com Rich (ADR-0015). `list`, `ler`, `buscar` e `devices` convergem numa experiência navegável e persistente — `cronista-tui` (Ink/Node, ver `cronista-tui/README.md`; sucessor do painel Textual original), porque o usuário pediu explicitamente poder navegar pelo acervo, ler transcrição trocando de aba e percorrer busca sem comando novo a cada passo. `rec` **fica de fora dessa navegação** de propósito — é a única operação irreversível do sistema (ADR-0012), e misturar isso com loop de evento foi exatamente o que o ADR-0006 evitou desde o início.
 
-**`cronista` sem nenhum comando abre um menu inicial navegável** (ADR-0016, seção "segunda tentativa, funcionou"): banner + info de sessão, lista de comandos escolhida por seta. É Textual, mas só como seletor — ao escolher um item, o menu termina antes do comando escolhido rodar, exatamente como se o usuário tivesse digitado `cronista <comando>` direto. `rec` continua fora de qualquer loop de evento mesmo quando escolhido pelo menu. Fora de terminal interativo (script, pipe, CI), cai no mesmo conteúdo em texto estático — o menu não tenta abrir sem TTY.
+**`cronista` sem nenhum comando abre o `cronista-tui`** (ADR-0017): banner + sidebar de cinco itens, escolhida por seta. Dois ficam dentro do Ink (Reuniões, Dispositivos — navegação persistente). Os outros três (Gravar, Sincronizar, Login) fazem o `cronista-tui` **sair antes de rodar** — spawna `cronista <comando>` como processo Python à parte, herdando o terminal, exatamente como se o usuário tivesse digitado `cronista <comando>` direto. `rec` continua fora de qualquer loop de evento mesmo quando escolhido pelo menu — a captura de áudio nunca entra no Node, só quem mostra o menu que leva até `cronista rec` mudou de lugar. Fora de terminal interativo (script, pipe, CI), cai no mesmo conteúdo em texto estático — o menu não tenta abrir sem TTY.
 
 ## 2. Comandos
 
@@ -31,9 +31,9 @@ O executável chama-se `cronista` ([16-nome.md](16-nome.md)).
 
 ¹ **`cronista rec` funciona com a API fora do ar.** Grava em disco e marca pendência, sem falhar. É a materialização do ADR-0012 na interface, e a razão de `cronista sync` existir.
 
-² **`list`, `ler` e `buscar` são três portas de entrada para a mesma experiência navegável (ADR-0016), não três comandos independentes que imprimem e terminam.** Cada um abre o painel Textual num ponto de partida diferente — lista geral, uma reunião já aberta, ou busca já rodada — mas uma vez dentro, a navegação (setas, trocar de aba entre resumo/transcrição, nova busca) acontece na mesma tela, sem sair para rodar outro comando.
+² **`list`, `ler` e `buscar` são três portas de entrada para a mesma experiência navegável (ADR-0016), não três comandos independentes que imprimem e terminam.** Cada um abre o `cronista-tui` num ponto de partida diferente — lista geral, uma reunião já aberta, ou busca já rodada — mas uma vez dentro, a navegação (setas, trocar de aba entre resumo/transcrição, nova busca, `Escape` até a sidebar pra trocar pra "Dispositivos" sem sair) acontece na mesma tela, sem precisar rodar outro comando.
 
-⁴ **`cronista devices` também abre numa tela persistente (Escape/q pra sair), gatilho de reversão do ADR-0016 disparado em 2026-09-04.** Diferente de `list`/`ler`/`buscar`, não é navegável — é só a lista de dispositivos, mostrada até o usuário sair. Fora de terminal interativo, cai no mesmo fallback de texto puro que já existia.
+⁴ **`cronista devices` também abre numa tela persistente (Escape/q pra sair), gatilho de reversão do ADR-0016 disparado em 2026-09-04.** Compartilha o mesmo `cronista-tui` de `list`/`ler`/`buscar` — `Escape` sobe até a sidebar, de onde dá pra trocar pra "Reuniões" sem sair do programa. Fora de terminal interativo, cai no mesmo fallback de texto puro que já existia.
 
 ³ **`cronista importar` também tolera API fora do ar, mesmo padrão de `rec`¹.** Não por decisão à parte — ele reaproveita a mesma `registration.register()` que `rec` chama (UC-10 incluído por UC-04): converte e grava a trilha em disco, marca pendência se a API não confirmar, e `cronista sync` completa depois. "Sim" na coluna acima descreve o uso normal, não uma trava.
 

@@ -30,9 +30,7 @@ def recover_interrupted(session: Session) -> int:
     Devolve quantas reuniões foram recuperadas, pra quem chama decidir se
     avisa alguém. Sem aviso nenhum quando não há nada a recuperar -- o
     silêncio é a resposta esperada na maioria das inicializações, e um
-    aviso a cada partida do worker viraria ruído (mesmo espírito do
-    "recovered from a crashed start" do torlink, exibido só quando
-    relevante)."""
+    aviso a cada partida do worker viraria ruído."""
     result = session.execute(
         text("UPDATE meetings SET status = 'recorded' WHERE status = 'transcribing'")
     )

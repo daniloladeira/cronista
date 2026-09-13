@@ -5,7 +5,7 @@ from __future__ import annotations
 import httpx2
 
 from cronista.client import token_store
-from cronista.core.config import ClientSettings
+from cronista.client.settings import ClientSettings
 
 settings = ClientSettings()
 
@@ -171,12 +171,8 @@ def reprocessar(meeting_id: object) -> dict:
 
 
 def resumir(meeting_id: object) -> dict:
-    """UC-06, RF-16 (docs/13-resumo.md). Bloqueia até o provedor
-    responder -- não é fila como /transcribe, por isso o timeout é bem
-    maior que o padrão (10s mal dá tempo de um LLM local começar a gerar
-    um resumo de reunião real). Valor de "tempo limite" ainda não medido
-    contra Ollama de verdade (docs/13 §7) -- 300s é uma folga generosa
-    provisória, não uma medição."""
+    """UC-06, RF-16. Bloqueia até o provedor responder -- timeout bem
+    maior que o padrão, um LLM local demora mais que 10s pra gerar."""
     return _authed_post(f"/meetings/{meeting_id}/summarize", {}, timeout=300.0)
 
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Versão:** 1.4 · **Última atualização:** 2026-09-04
+> **Versão:** 1.5 · **Última atualização:** 2026-09-04
 
 ## 1. Ordem e critério
 
@@ -194,9 +194,23 @@ Validado contra dado real de dev, depois do Docker voltar: `DELETE` numa das reu
 
 Fase 7 fechada.
 
+### Retrofit (2026-09-04) · Navegação migra de Textual pra Ink
+
+Não é fase nova — é retrofit sobre as Fases 2 e 5, registrado aqui porque mudou código que essas fases já tinham fechado. [ADR-0017](adr/0017-ink-para-navegacao.md) tem o registro completo; resumo:
+
+`devices_screen.py` e `panel.py` (Textual, Python) foram apagados. `cronista devices`/`list`/`ler`/`buscar`, no modo interativo, agora abrem `cronista-tui` (Ink/Node, `cronista-tui/`) via subprocess (`cronista/client/cronista_tui.py`) — processo separado, mesma sessão (lê o mesmo `auth.json` que `cronista login` já escreve). `rec`/`login`/`sync`/`importar` e o menu inicial (`cronista` sem comando, `home.py`) não mudaram.
+
+**Motivo, resumido**: três bugs de medição de layout no Textual, da mesma classe, num intervalo de horas (caixa dentro de caixa, `width: auto` não medindo `rich.Table`, largura fixa que mesmo assim quebrava com nome de dispositivo comprido) — padrão, não incidente. Verificado com protótipo antes de decidir: mesma tela, mesmo dado real, sem largura hardcoded no Ink.
+
+**Não foi de graça.** O protótipo Ink reproduziu, à toa, o mesmo tipo de erro (largura calculada errado) até corrigir seguindo padrão de um CLI real em Ink (torlink) — dois bugs de largura próprios, achados e corrigidos durante a migração, documentados em `cronista-tui/README.md`. Resumo de reunião (markdown) perdeu estilo — vira texto puro, Ink não tem `Markdown` widget pronto como o Textual tinha.
+
+**Mesmo dia, segunda rodada: o menu inicial também migrou.** A frase acima ("o menu inicial... não mudaram") valeu só até o usuário perguntar diretamente se a intenção era o Ink virar "meio que o front", com Python só onde precisa — confirmando que sim. `home.py` foi apagado; `cronista` sem comando agora abre o `cronista-tui` direto, com uma sidebar de cinco itens: Reuniões/Dispositivos (Ink, como já estava) e três novos — Gravar/Sincronizar/Login — que saem do Ink e rodam `cronista <sub>` como processo Python à parte (`cronista-tui/src/pythonBridge.js`, sentido inverso de `cronista_tui.py`). A captura de áudio em si não mudou de lugar nenhuma vez — ADR-0006 continua protegendo isso especificamente. Detalhe da troca seguro de processo (esperar o Ink desmontar antes de chamar o Python) em [ADR-0017](adr/0017-ink-para-navegacao.md).
+
+`ler`/`buscar` foram portados **antes** de apagar `panel.py`, decisão explícita do usuário — sem lacuna de funcionalidade no meio do caminho. **Não testado ainda contra API respondendo de verdade** (só contra API fora do ar, mensagem de erro confirmada) — falta essa validação de ponta a ponta.
+
 ### Fase 8 · Interface desktop
 
-PySide6 com ícone na bandeja, sobre a mesma API. Terá especificação própria.
+~~PySide6 com ícone na bandeja~~ — descartado (2026-09-10): decisão do usuário, React Native em vez de PySide6. Sobre a mesma API. Terá especificação própria (ainda não desenhada).
 
 ### Fase 9 · Leitura remota
 

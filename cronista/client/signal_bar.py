@@ -1,13 +1,9 @@
-"""Tela de `cronista rec`. Ver docs/17-identidade-visual-cli.md §3/§6, e o
-layout decidido em `scripts/preview_rec_screen.py` (commit `9683e85`,
-"Consolida medidor de sinal"): régua com o nome do app, cabeçalho compacto
-numa linha só (título à esquerda, indicador de sinal embutido à direita),
-rodapé com duração — **sem** bloco de barra grande no conteúdo. O indicador
-de sinal vive só no cabeçalho, como traço fino por trilha.
+"""Tela de `cronista rec` (docs/17-identidade-visual-cli.md §3/§6): régua
+com o nome do app, cabeçalho compacto numa linha só (título à esquerda,
+indicador de sinal embutido à direita), rodapé com duração.
 
-RF-31 (pausar/retomar): decidido com preview visual comparado ao vivo com
-o usuário. Enquanto pausado, o traço do cabeçalho vira o texto "pausado"
-em âmbar, e a duração para de contar (RN-11: tempo pausado não é gravação).
+RF-31 (pausar/retomar): enquanto pausado, o traço do cabeçalho vira o
+texto "pausado" em âmbar, e a duração para de contar (RN-11).
 """
 
 from __future__ import annotations
@@ -117,13 +113,11 @@ class SignalBar:
         self._set_tab_title("cronista")
 
     def _set_tab_title(self, title: str) -> None:
-        """Título da aba/janela do terminal — acha a janela certa numa
-        reunião longa sem precisar voltar pro terminal pra conferir
-        (inspirado em `TabTitle.tsx` do torlink). A sequência OSC funciona
-        na maioria dos terminais modernos; no Windows, complementa com a
-        API nativa porque o console legado nem sempre processa OSC.
+        """Título da aba/janela do terminal. A sequência OSC funciona na
+        maioria dos terminais modernos; no Windows, complementa com a API
+        nativa porque o console legado nem sempre processa OSC.
 
-        Duas armadilhas, achadas rodando de verdade, não presumidas:
+        Duas armadilhas:
 
         1. `Live` redireciona `sys.stdout` sozinho enquanto ativo
            (`redirect_stdout=True`, padrão) — escrever em `sys.stdout`
@@ -175,16 +169,22 @@ class SignalBar:
             f"pausado · {self._title}" if paused else f"gravando · {self._title}"
         )
 
-    def render_header_trace(self, track: str, width: int = _INLINE_WIDTH) -> Text:
-        """Traço fino de uma linha, para embutir ao lado do título."""
+    def render_header_trace(self, track: str, width: int = _INLINE_WIDTH, frozen: bool = False) -> Text:
+        """Traço fino de uma linha, para embutir ao lado do título.
+
+        `frozen=True` (pausado): as threads de captura já param de chamar
+        `update()` durante a pausa (capture.py), então o desenho por si só
+        já para de mudar -- isto só troca a cor viva (gradiente por nível)
+        por um tom único e apagado, reforçando visualmente o "parado"."""
         with self._lock:
             recent = list(self._history[track])[-width:]
         color = _TRACK_COLOR[track]
+        static_color = _tone(color, 0.0)
         text = Text()
         for level in recent:
             clamped = max(0.0, min(level, 1.0)) ** _SENSITIVITY
             idx = min(int(clamped * len(_THIN_BLOCKS)), len(_THIN_BLOCKS) - 1)
-            text.append(_THIN_BLOCKS[idx], style=_tone(color, clamped))
+            text.append(_THIN_BLOCKS[idx], style=static_color if frozen else _tone(color, clamped))
         return text
 
     def render_banner(self) -> Group:

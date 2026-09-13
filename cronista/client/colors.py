@@ -1,6 +1,5 @@
 """Interpolação de cor hex e o shimmer do nome "cronista", compartilhados
-entre signal_bar.py (cabeçalho do `rec`), devices_screen.py e banner.py
-(degradê 2D da abertura, docs/17-identidade-visual-cli.md §7).
+entre signal_bar.py e banner.py (docs/17-identidade-visual-cli.md §7).
 """
 
 from __future__ import annotations

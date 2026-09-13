@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import socket
+import sys
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
@@ -13,14 +14,24 @@ from rich.markdown import Markdown as RichMarkdown
 from rich.table import Table
 from rich.text import Text
 
+# Sem console real anexado (pipe, redirecionamento, chamado como
+# subprocesso capturado), o Windows cai pro codepage legado e "reunião"
+# vira "reuni�o" -- achado testando `cronista list`/`ler`/`buscar` sem
+# TTY (mesma causa já corrigida do lado Node em pythonBridge.js). Só
+# reconfigura quando o encoding já não é utf-8 -- reconfigure()
+# incondicional aqui (import time) quebrava a suíte inteira: o stdout
+# capturado pelo pytest não é um arquivo real, e o encoding dele já vem
+# utf-8, então esta guarda também evita mexer nele.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure") and getattr(_stream, "encoding", "").lower() != "utf-8":
+        _stream.reconfigure(encoding="utf-8")
+
 from cronista.client import (
     api_client,
     capture,
     conversion,
-    devices_screen,
-    home,
+    cronista_tui,
     naming,
-    panel,
     reconciliation,
     registration,
     session_info,
@@ -28,8 +39,9 @@ from cronista.client import (
     token_store,
 )
 from cronista.client.reconciliation import ReconcileResult
-from cronista.core.config import RECORDINGS_DIRNAME, ClientSettings
+from cronista.client.settings import ClientSettings
 from cronista.core.ids import uuid7
+from cronista.core.paths import RECORDINGS_DIRNAME
 
 app = typer.Typer(add_completion=False)
 _console = Console()
@@ -41,17 +53,10 @@ _COMANDOS_MINIMOS = [("r", "rec"), ("d", "devices"), ("s", "sync"), ("l", "login
 
 
 def _tabela(titulo: str) -> Table:
-    # Toda tabela do CLI passa por aqui -- achado real: as tabelas
-    # (devices, list, buscar) usavam a borda/cabeçalho padrão do Rich,
-    # sem nenhuma cor de identidade do sistema, mesma lacuna que o menu
-    # inicial tinha (docs/17 §4).
     return Table(title=titulo, border_style=_DOURADO, header_style=f"bold {_DOURADO}", title_style=f"bold {_DOURADO}")
 
 
 def _tela_inicial_partes() -> list[Text]:
-    # `cronista` sem comando, fora de terminal interativo: mesmo conteúdo
-    # do menu navegável (home.py), só que estático -- não tem quem
-    # aperte seta/Enter num script ou pipe.
     partes = session_info.partes(_console)
     partes.append(Text())
     comandos = "    ".join(f"{letra} - {nome}" for letra, nome in _COMANDOS_MINIMOS)
@@ -60,13 +65,9 @@ def _tela_inicial_partes() -> list[Text]:
 
 
 def _render_tela_inicial() -> None:
-    """Alinhado à esquerda, de propósito -- duas tentativas de centralizar
+    """Alinhado à esquerda, de propósito -- tentativas de centralizar
     (`justify="center"`/`Align`) quebraram de verdade no terminal do
-    usuário: texto cortado na borda em janela estreita, banner empurrado
-    pra fora da tela em janela alta. Suspeita é `console.width`/`.height`
-    do Rich não baterem com o tamanho real da janela nesse terminal, mas
-    sem confirmar isso na máquina de verdade, mais seguro não depender de
-    largura nem altura nenhuma pra posicionar (docs/17 §7)."""
+    usuário (docs/17 §7)."""
     for parte in _tela_inicial_partes():
         _console.print(parte)
 
@@ -77,32 +78,13 @@ def _callback(ctx: typer.Context) -> None:
     if ctx.invoked_subcommand is not None:
         return
     if not _console.is_terminal:
-        # Script, pipe, CI: sem terminal de verdade não tem quem navegue
-        # um menu Textual -- imprime uma vez e sai, como sempre foi.
         _render_tela_inicial()
         return
-    # Menu navegável (ADR-0016, seção "Extensão"). É só um seletor: sai
-    # completamente (self.exit) antes do comando escolhido rodar --
-    # nenhum comando roda dentro dele, `rec` continua fora de qualquer
-    # loop de evento (ADR-0006).
-    chosen = home.HomeApp().run()
-    if chosen is None:
-        return  # Escape/q: usuário saiu sem escolher nada
-    if chosen == "rec":
-        # rec() chamado direto (fora do Click) não resolve os defaults de
-        # typer.Option pra None sozinho -- precisa passar explícito, senão
-        # capture.get_input_device recebe o próprio objeto OptionInfo.
-        rec(titulo=None, mic=None, saida=None)
-    elif chosen == "devices":
-        devices()
-    elif chosen == "sync":
-        sync()
-    elif chosen == "login":
-        usuario = typer.prompt("Usuario")
-        senha = typer.prompt("Senha", hide_input=True)
-        _do_login(usuario, senha)
-    elif chosen == "list":
-        list_()
+    try:
+        cronista_tui.run()
+    except cronista_tui.TuiError as exc:
+        typer.echo(f"Erro: {exc}", err=True)
+        raise typer.Exit(code=4)
 
 
 def _do_login(usuario: str, senha: str) -> None:
@@ -197,7 +179,11 @@ def devices() -> None:
             saida.add_row(d.name, "sim" if d.is_default else "")
         _console.print(saida)
         return
-    devices_screen.DevicesApp().run()
+    try:
+        cronista_tui.run("dispositivos")
+    except cronista_tui.TuiError as exc:
+        typer.echo(f"Erro: {exc}", err=True)
+        raise typer.Exit(code=4)
 
 
 @app.command()
@@ -382,19 +368,52 @@ def importar(
         )
 
 
+# Status vem cru da API (cronista/core/models.py) -- mesma tradução do
+# lado Ink (cronista-tui/src/MeetingList.js), pra não misturar pt-BR com
+# termo técnico em inglês na tabela.
+_STATUS_LABEL = {
+    "registering": "registrando",
+    "recorded": "gravada",
+    "transcribing": "transcrevendo",
+    "transcribed": "transcrita",
+    "summarized": "resumida",
+    "transcription_failed": "falha na transcrição",
+    "summary_failed": "falha no resumo",
+}
+
+
+def _data_legivel(iso: str) -> str:
+    """"2026-09-10T15:25:13.527145Z" -> "10/09/2026 15:25" -- a tabela
+    mostrava o timestamp ISO cru, com microssegundos e tudo."""
+    try:
+        return datetime.fromisoformat(iso).strftime("%d/%m/%Y %H:%M")
+    except ValueError:
+        return iso
+
+
 def _tabela_reunioes(reunioes: list[dict], titulo: str) -> Table:
     tabela = _tabela(titulo)
     tabela.add_column("Título")
     tabela.add_column("Estado")
     tabela.add_column("Início")
     for r in reunioes:
-        tabela.add_row(r["title"], r["status"], r["started_at"])
+        tabela.add_row(
+            r["title"], _STATUS_LABEL.get(r["status"], r["status"]), _data_legivel(r["started_at"])
+        )
     return tabela
 
 
 def _sai_com_erro_de_api(exc: api_client.ApiError) -> None:
     typer.echo(f"Erro: {exc}", err=True)
     raise typer.Exit(code=2 if exc.status_code == 401 else 3)
+
+
+def _abre_cronista_tui(section: str, *, meeting_id: str | None = None, search_term: str | None = None) -> None:
+    try:
+        cronista_tui.run(section, meeting_id=meeting_id, search_term=search_term)
+    except cronista_tui.TuiError as exc:
+        typer.echo(f"Erro: {exc}", err=True)
+        raise typer.Exit(code=4)
 
 
 @app.command(name="list")
@@ -406,7 +425,7 @@ def list_() -> None:
         except api_client.ApiError as exc:
             _sai_com_erro_de_api(exc)
         return
-    panel.PanelApp().run()
+    _abre_cronista_tui("reunioes")
 
 
 @app.command()
@@ -425,7 +444,7 @@ def ler(meeting_id: str = typer.Argument(..., help="ID da reunião")) -> None:
             mais_recente = sorted(resumos, key=lambda r: r["generated_at"])[-1]
             _console.print(RichMarkdown(mais_recente["markdown"]))
         return
-    panel.PanelApp(meeting_id=meeting_id).run()
+    _abre_cronista_tui("reunioes", meeting_id=meeting_id)
 
 
 @app.command()
@@ -446,7 +465,7 @@ def buscar(termo: str = typer.Argument(..., help="Termo de busca")) -> None:
             tabela.add_row(r["meeting_title"], r["timestamp"], r["speaker"], r["text"])
         _console.print(tabela)
         return
-    panel.PanelApp(search_term=termo).run()
+    _abre_cronista_tui("reunioes", search_term=termo)
 
 
 @app.command()

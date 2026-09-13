@@ -1,6 +1,6 @@
 # Matriz de Rastreabilidade
 
-> **Versão:** 1.0 · **Última atualização:** 2026-08-12
+> **Versão:** 1.1 · **Última atualização:** 2026-09-04
 
 Este documento é a verificação da especificação. Ele existe para responder quatro perguntas com prova, não com impressão:
 
@@ -146,7 +146,8 @@ Os fluxos de exceção são a parte da especificação com maior chance de virar
 | Mermaid para todos os diagramas | [0013](adr/0013-mermaid-para-diagramas.md) | n/d (decisão de documentação) |
 | Worker de transcrição em container com GPU | [0014](adr/0014-worker-em-container-com-gpu.md) | RNF-C03, RNF-P01, RNF-P04 |
 | Rich como biblioteca de apresentação do CLI | [0015](adr/0015-rich-como-apresentacao-cli.md) | RF-05, RNF-U01, RNF-U02, RNF-U03 |
-| Textual para navegação (list, ler, buscar) | [0016](adr/0016-textual-para-navegacao.md) | RP-06, RF-20 a RF-24 |
+| Textual para navegação (list, ler, buscar) — revertido | [0016](adr/0016-textual-para-navegacao.md) | RP-06, RF-20 a RF-24 |
+| Ink para navegação, substituindo Textual (list, ler, buscar, devices, menu inicial) | [0017](adr/0017-ink-para-navegacao.md) | RP-06, RF-20 a RF-24, UC-02 |
 
 ---
 

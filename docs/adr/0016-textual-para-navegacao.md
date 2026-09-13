@@ -1,9 +1,11 @@
 # ADR-0016 · Textual para navegação (list, ler, buscar)
 
-- **Status:** aceito
+- **Status:** revertido por [ADR-0017](0017-ink-para-navegacao.md)
 - **Data:** 2026-08-17
 - **Requisitos relacionados:** RP-06, RF-20 a RF-24 (UC-07, UC-08)
 - **Reverte parcialmente:** [ADR-0015](0015-rich-como-apresentacao-cli.md)
+
+> **Nota de 2026-09-04:** o gatilho de reversão deste ADR (ver seção própria, abaixo) disparou de novo — bugs de layout recorrentes no motor do Textual, não um problema pontual. Ver [ADR-0017](0017-ink-para-navegacao.md). `list`, `ler`, `buscar` e `devices` migraram pra Ink (`cronista-tui`) primeiro; no mesmo dia, o menu inicial (`cronista` sem comando, `home.py`) também migrou — ver nota no fim deste arquivo. Nada do que este ADR decidiu continua em produção; fica como registro de decisão, não como estado atual.
 
 ## Contexto
 
@@ -63,3 +65,17 @@ O próprio gatilho de reversão deste ADR previu isso: *"se o usuário frequente
 **Resposta, deliberadamente contida**: só `devices` absorvido pro modelo de tela persistente (`cronista/client/devices_screen.py`, `DevicesApp`), não uma reversão geral. `rec` continua fora de qualquer loop de evento — ADR-0006 protege isso especificamente por ser a única operação irreversível do sistema, e essa razão não mudou. `login`/`sync` não foram questionados, ficam como comandos que rodam e terminam até (se algum dia) o mesmo gatilho disparar pra eles.
 
 Achado extra no caminho, mesma disciplina de sempre (exportar SVG antes de integrar): a primeira versão da tela colocava a `rich.Table` (com sua própria borda reta) dentro do painel Textual já arredondado — uma caixa dentro da outra. O usuário viu o resultado renderizado e apontou. Corrigido com `Table(box=None)`: só o painel externo emoldura, o conteúdo interno é texto alinhado, sem moldura própria.
+
+## Nota (2026-09-04): o gatilho de reversão disparou de novo, desta vez pra valer — ver ADR-0017
+
+A caixa-dentro-de-caixa do parágrafo acima não foi um incidente isolado: no mesmo dia, corrigindo o padding do título de `devices`, apareceu mais um bug de medição (`width: auto` do Textual não media a `rich.Table` dentro do `Static`, exigiu `width: 70` hardcoded que *mesmo assim* quebrava com nome de dispositivo comprido). Três bugs da mesma classe — motor de layout que não mede o próprio conteúdo direito — bateram um atrás do outro. O usuário relatou, sem eu perguntar: *"com o Rich eu estou tendo muitos problemas"*, e citou Ink como alternativa que "funciona muito melhor" para layout.
+
+Isso é exatamente a pergunta que a tabela de alternativas deste ADR já tinha respondido "não" — *"Ink/TypeScript para as telas navegáveis: reabriria a discussão de dois runtimes, sem necessidade"*. A resposta mudou porque a premissa mudou: quando este ADR foi escrito, "Textual entrega a mesma capacidade de navegação" era verdade só sobre *capacidade*, não sobre *robustez de layout* — o padrão recorrente de bug não existia ainda como evidência.
+
+**`list`, `ler`, `buscar` e `devices` migraram pra Ink** (`cronista-tui`, processo Node separado). Decisão completa, com alternativas e consequências negativas registradas, em [ADR-0017](0017-ink-para-navegacao.md).
+
+## Nota (2026-09-04, mesmo dia): o menu inicial também migrou — `home.py` apagado de vez
+
+O parágrafo acima considerou deixar o menu inicial (`home.py`) fora, por não ter o mesmo histórico de bug e por `cronista-tui` ainda não saber despachar pra `rec`/`sync`/`login`. Isso durou poucas horas: o usuário perguntou diretamente se a intenção era o Ink virar a porta única — "meio que o front", Python só onde precisa. A resposta era sim, e a segunda razão (não saber despachar) deixou de ser motivo pra não fazer, virou trabalho a fazer: `cronista-tui` ganhou três itens de sidebar (Gravar/Sincronizar/Login) que saem do Ink e rodam `cronista <sub>` como processo Python à parte, sentido inverso do mecanismo que já existia.
+
+Com isso, **nenhuma tela deste ADR continua em pé** — `list`, `ler`, `buscar`, `devices` e agora o menu inicial migraram todos pra `cronista-tui`. Este ADR fica só como registro histórico da decisão original (por que Textual entrou, por que fazia sentido em 2026-08-17), não como estado atual do sistema. Detalhe completo da migração final em [ADR-0017](0017-ink-para-navegacao.md) (nota "o menu inicial também migrou").

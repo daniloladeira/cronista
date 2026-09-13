@@ -1,10 +1,5 @@
 """Banner de abertura "cronista" (docs/17-identidade-visual-cli.md §7).
-
-Gradiente adaptado da técnica real do projeto torlink (baairon/torlink,
-`src/ui/components/Logo.tsx` + `src/ui/theme.ts`): não é degradê por
-letra, é por CARACTERE, numa grade 2D (linha e coluna combinadas),
-passando por paradas de cor — aqui em tons dourados (cor de identidade
-do Cronista) em vez da paleta roxa original.
+Degradê por CARACTERE numa grade 2D (linha e coluna), não por letra.
 """
 
 from __future__ import annotations
@@ -27,7 +22,6 @@ _SHADE = "#B8934F"  # ponto mais escuro do degradê -- ainda dourado, nunca marr
 
 
 def _sheen(t: float) -> str:
-    """Mesmos 4 patamares do `getSheen` do torlink, com a paleta trocada."""
     if t < 0.15:
         return lerp_color(_HIGHLIGHT, _TOP, t / 0.15)
     if t < 0.4:
@@ -65,9 +59,7 @@ def _big() -> Text:
 
 def render(console: Console) -> Text:
     """Banner grande se couber na largura do terminal; senão, cai pro
-    nome simples colorido -- mesmo padrão do torlink (`Splash.tsx`,
-    `showLogo = cols >= LOGO_WIDTH + 2`). Sem cor nenhuma se a saída não
-    for um terminal interativo (docs/17 §5)."""
+    nome simples colorido. Sem cor se a saída não for terminal (docs/17 §5)."""
     if not console.is_terminal:
         return Text(_WORD.lower())
     if console.width >= width() + 2:
