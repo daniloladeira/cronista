@@ -1,0 +1,23 @@
+{
+  "name": "cronista-tui",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Navegação persistente do cronista (home + reuniões + dispositivos) em Ink, sucessora de home.py/panel.py/devices_screen.py (ver README.md).",
+  "type": "module",
+  "bin": {
+    "cronista-tui": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "capture": "node src/capture.js"
+  },
+  "dependencies": {
+    "figlet": "^1.11.4",
+    "ink": "^7.1.1",
+    "react": "^19.2.4"
+  },
+  "devDependencies": {
+    "ink-testing-library": "^4.0.0",
+    "strip-ansi": "^7.1.0"
+  }
+}

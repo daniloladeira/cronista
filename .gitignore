@@ -20,3 +20,10 @@ ct36/
 # Modelos baixados
 *.bin
 *.onnx
+
+# cronista-tui (navegação Ink, ver cronista-tui/README.md)
+cronista-tui/node_modules/
+cronista-tui/dist/
+
+# graphify (grafo de dependências, gerado sob demanda -- regenerável)
+graphify-out/
