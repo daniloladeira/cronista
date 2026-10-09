@@ -26,6 +26,7 @@ dependencies = [
     "psycopg[binary]>=3.2",
     # Transcrição (ADR-0002)
     "faster-whisper>=1.1",
+    "av>=14,<17",  # faster-whisper 1.2.1 chama av.open(metadata_errors=...), que o av 19 recusa (TypeError). Medido: 16.1.0 funciona.
     # Resumo (ADR-0005)
     "langchain-core>=0.3",
     "langchain-ollama>=0.2",
