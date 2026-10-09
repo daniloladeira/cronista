@@ -20,14 +20,15 @@ se fica em Ink ou volta pro Python:
 | Reuniões (`list`/`ler`/`buscar`) | Ink, tela persistente | Navegação de verdade -- é o motivo original da migração |
 | Dispositivos | Ink, tela persistente | Mesmo motivo; dado real vem do Python via `devices.py` (`capture.py`/`soundcard`, só Python fala WASAPI) |
 | Gravar (`rec`) | **Python**, `cronista-tui` sai antes de rodar | Único lugar com risco real de perda de dado (ADR-0006/0012) -- não entra em runtime concorrente nenhum, de propósito |
-| Sincronizar (`sync`), Login | **Python**, `cronista-tui` sai antes de rodar | Comando roda e termina, sem navegação -- não tem tela pra migrar |
+| Sincronizar (`sync`) | **Python**, roda em paralelo ao Ink (`runPythonCaptured`), sem sair | Comando roda e termina, sem navegação -- não tem tela pra migrar |
+| Login | Ink, tela persistente (`screens/Login.js`) | Só precisa de dois campos e um POST em `/auth/login`; sair do Ink pra um prompt do Python escondia a mensagem de erro e arriscava o stdin compartilhado. `cronista login` continua existindo no Python, pra uso por script |
 
 `devices.py`, na raiz deste pacote, é a ponte Python→Node: chama
 `cronista.client.capture.list_input_devices()/list_output_devices()` e
 devolve JSON. Dado real desta máquina, nunca fixture inventada.
 
 `pythonBridge.js` é a ponte Node→Python: sentido contrário, pra "Gravar"/
-"Sincronizar"/"Login" (ver seção própria, abaixo). `importar` não está no
+"Sincronizar" (ver seção própria, abaixo). `importar` não está no
 menu -- precisa de um caminho de arquivo obrigatório, não cabe num
 seletor de seta (mesma razão que já valia pro `home.py` antigo).
 
@@ -41,8 +42,9 @@ npm run capture       # captura estática (Home + as duas seções), sem TTY -- 
 
 **Sessão compartilhada com o Python**: `apiClient.js` lê o mesmo
 `%LOCALAPPDATA%\cronista\auth.json` que `cronista/client/token_store.py`
-escreve — faça `cronista login` (lado Python) antes de abrir "Reuniões"
-aqui. Sem token, a tela mostra "Não autenticado. Rode `cronista login`."
+escreve. Faça o login pelo item "Login" daqui mesmo (ou `cronista login`,
+lado Python) antes de abrir "Reuniões". Sem token, a tela mostra
+"Não autenticado. Rode `cronista login`."
 em vez de travar ou mostrar traceback (mesmo padrão de clareza que
 `panel.py` já seguia, RNF-U02).
 
@@ -188,8 +190,8 @@ depois se isso incomodar de verdade.
 ## Menu unificado: sair do Ink pra rodar Python (ADR-0017)
 
 `cronista` sem comando não abre mais `home.py` -- abre este app direto,
-com banner + sidebar de 5 itens: Reuniões/Dispositivos (Ink, como sempre)
-e Gravar/Sincronizar/Login (Python). É o sentido contrário de
+com banner + sidebar de 5 itens: Reuniões/Dispositivos/Login (Ink, como sempre)
+e Gravar/Sincronizar (Python). É o sentido contrário de
 `cronista_tui.py` (Python spawnando Node): aqui é `pythonBridge.js` que
 spawna `<repo>/.venv/Scripts/cronista.exe <sub>`, herdando o terminal
 inteiro (`stdio: "inherit"`).
@@ -234,9 +236,22 @@ Node novo (`spawnSync(process.execPath, [__filename], ...)`), com
 cópia, nenhum componente é montado duas vezes no mesmo processo.
 
 `importar` continua fora do menu (precisa de argumento obrigatório).
-`login` reaproveita o prompt que o próprio comando Python já tem
-(`typer.Option(..., prompt=True)`) -- nenhuma lógica de prompt nova no
-lado Node.
+
+**Atualização (2026-10-08): Login saiu desta lista.** Era o único item
+que saía do Ink só por ter prompt, e isso tinha custo real: o erro de
+senha errada aparecia por 2 segundos (`pauseForKey`) e sumia quando o TUI
+reabria na tela alternativa, e o Enter apertado durante a espera ficava no
+buffer do console e era lido pelo processo seguinte. Agora `screens/Login.js`
+faz usuário, senha mascarada e `POST /auth/login` (`apiClient.js::login`,
+grava no mesmo `auth.json`), com o erro na própria tela. `pauseForKey` virou
+`cmd /c pause` (espera tecla de verdade) e hoje só serve ao `rec`.
+
+**Campos de texto e o atalho `q`.** `App.js` trata `q` como "sair" em
+qualquer lugar; com um campo de texto focado isso fazia digitar `q` na
+senha, ou na busca de reuniões, abrir a confirmação de saída. As telas com
+campo (`Login`, `Meetings` em modo busca) avisam o App por `onTyping`, e
+enquanto `typing` for true o `q` vira texto e o rodapé mostra só
+"↵ continuar, Esc voltar".
 
 ## Header duplicado na troca home↔main
 

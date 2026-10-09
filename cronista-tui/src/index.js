@@ -10,13 +10,13 @@ const __filename = fileURLToPath(import.meta.url);
 // Node controlando o stdin ele mesmo (readline, raw mode, ou outro
 // render() do Ink) derruba o processo depois que um filho Python usou o
 // mesmo stdio herdado -- só um comando nativo do cmd.exe (não Node lendo
-// stdin) resolvia isso de verdade. TESTE: `timeout /nobreak` troca
-// "aperte uma tecla" por uma espera curta sem tecla nenhuma, mas
-// continua nativo do cmd.exe (mesma característica que resolvia o
-// problema original) -- se ainda quebrar rec/login, volta pro `pause`.
+// stdin) resolvia isso de verdade. `pause` espera uma tecla de verdade:
+// a espera fixa de 2s (`timeout /nobreak`) apagava a saída do `rec`
+// (duração, pasta) antes de dar tempo de ler, porque o TUI reabre na tela
+// alternativa por cima.
 function pauseForKey() {
   process.stdout.write("\n");
-  spawnSync("cmd.exe", ["/c", "timeout", "/t", "2", "/nobreak"], { stdio: "inherit" });
+  spawnSync("cmd.exe", ["/c", "pause"], { stdio: "inherit" });
 }
 
 let requested = null;

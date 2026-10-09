@@ -90,7 +90,7 @@ Duas merecem destaque por serem incomuns:
 
 ## Ambiente
 
-Windows 11, Python 3.13, GPU NVIDIA, Docker Engine nativo no WSL2, Ollama, ffmpeg (`winget install Gyan.FFmpeg`) — este último só é necessário para `cronista importar` (Fase 6).
+Windows 11, Python 3.13, GPU NVIDIA, Docker Desktop (backend WSL2, com suporte a GPU NVIDIA), Ollama, ffmpeg (`winget install Gyan.FFmpeg`) — este último só é necessário para `cronista importar` (Fase 6).
 
 A captura de loopback foi verificada nesta máquina antes do planejamento. O script está em [`scripts/check_audio.py`](scripts/check_audio.py) e é o primeiro passo de qualquer instalação.
 
@@ -100,23 +100,31 @@ python scripts/check_audio.py
 
 ### Subir o ambiente
 
-**Por opção, nada sobe automaticamente no logon.** Abrir o terminal do WSL é o gesto que liga o ambiente:
+O banco e o worker rodam no Docker Desktop do Windows, e os comandos abaixo são do PowerShell, na pasta do projeto. Os containers têm `restart: unless-stopped`: depois de subir uma vez, voltam sozinhos quando o Docker Desktop abre.
 
-```bash
-wsl
+```powershell
+docker compose up -d --build
 ```
 
-A distro sobe, o systemd inicia o Docker e os containers voltam sozinhos (`restart: unless-stopped`). O `docker compose up -d` só é necessário na primeira vez.
+**A API não está no compose.** Sobe à parte, e fica rodando em um terminal:
 
-**A API não está no compose** — sobe à parte:
-
-```bash
-uvicorn cronista.api.main:app --host 127.0.0.1 --port 8000
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn cronista.api.main:app --host 127.0.0.1 --port 8000
 ```
 
-Para derrubar tudo: `wsl --shutdown`.
+Para abrir o menu (precisa de `npm install` uma vez em `cronista-tui/`):
 
-**Esquecer de subir não custa uma reunião.** Gravar não depende de API, banco nem WSL. O áudio vai para o disco e o registro se completa depois, com `cronista sync`. É exatamente o cenário que motivou o [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md): ninguém confere container antes de entrar numa reunião.
+```powershell
+cronista
+```
+
+Para ver o log do worker, junte os dois fluxos, senão os logs do Python não aparecem:
+
+```powershell
+docker logs -f cronista-worker 2>&1
+```
+
+**Esquecer de subir não custa uma reunião.** Gravar não depende de API nem de banco. O áudio vai para o disco e o registro se completa depois, com `cronista sync`. É exatamente o cenário que motivou o [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md): ninguém confere container antes de entrar numa reunião.
 
 ---
 

@@ -208,6 +208,14 @@ Não é fase nova — é retrofit sobre as Fases 2 e 5, registrado aqui porque m
 
 `ler`/`buscar` foram portados **antes** de apagar `panel.py`, decisão explícita do usuário — sem lacuna de funcionalidade no meio do caminho. **Não testado ainda contra API respondendo de verdade** (só contra API fora do ar, mensagem de erro confirmada) — falta essa validação de ponta a ponta.
 
+### Manutenção (2026-10-08)
+
+**Worker: 7 reuniões em `transcription_failed` por `av` 19.** `open() got an unexpected keyword argument 'metadata_errors'`: o `faster-whisper` 1.2.1 chama `av.open(..., metadata_errors="ignore")` e o PyAV 19.0.1, que o pip resolveu no build da imagem, recusa o argumento. As dependências não fixavam o `av`. Reproduzido dentro do container com `decode_audio` numa trilha real, e corrigido com `av<17` (testado com 16.1.0 no container antes de mexer no repositório). O `pyproject.toml` agora fixa `av>=14,<17`. As 7 reuniões foram reprocessadas e terminaram `transcribed`. Observação sem causa confirmada: uma trilha de 1h19 (51 min de fala após o VAD) levou ~17 min, contra ~2min26s do CT-16.
+
+**Login migrou para o Ink** (detalhes na nota de 2026-10-08 do [ADR-0017](adr/0017-ink-para-navegacao.md)), junto com a correção do atalho `q` em campos de texto e de `pauseForKey` (agora espera tecla).
+
+**Pendente:** `WORKER_SERVICE_TOKEN` está vazio no `.env` (aviso do `docker compose`), então o resumo automático pós-transcrição não dispara. Gerar com `scripts/mint_worker_token.py`.
+
 ### Fase 8 · Interface desktop
 
 ~~PySide6 com ícone na bandeja~~ — descartado (2026-09-10): decisão do usuário, React Native em vez de PySide6. Sobre a mesma API. Terá especificação própria (ainda não desenhada).

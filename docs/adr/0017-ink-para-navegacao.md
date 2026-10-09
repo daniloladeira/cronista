@@ -54,3 +54,11 @@ A garantia do ADR-0006 continua de pé, e é isso que faz este design seguro: a 
 **Cuidado técnico que não existia antes de ter dois processos disputando o terminal**: o Node só pode chamar o Python depois que o Ink desmontou de vez e devolveu o modo raw do stdin — chamar antes corromperia o terminal. `index.js` resolve isso com `await waitUntilExit()` antes de spawnar, ver `cronista-tui/README.md`.
 
 `importar` não entrou no menu — precisa de um caminho de arquivo obrigatório, não cabe num seletor de seta (mesma limitação que já valia pro `home.py` original).
+
+## Nota (2026-10-08): `login` também migrou para o Ink
+
+A tabela de alternativas acima dizia que `login`/`sync` "não têm histórico de bug de layout, não há problema a resolver aí". Usando de verdade, havia: sair do Ink para um prompt do Python mostrava o erro de senha errada por 2 segundos e o apagava quando o TUI reabria, e teclas apertadas durante a espera ficavam no buffer e eram lidas pelo processo seguinte. Não havia motivo técnico para o login ficar em Python: `apiClient.js` já gravava o mesmo `auth.json` e `TextInput.js` já existia.
+
+**`screens/Login.js` faz o login dentro do TUI** (usuário, senha mascarada, spinner, erro na tela). `cronista login` segue existindo no Python, para uso por script. A garantia do ADR-0006 não muda: só `rec` ainda sai do Ink, e `pauseForKey` virou `cmd /c pause` para o resumo do `rec` não sumir.
+
+Consequência colateral corrigida no mesmo commit: o atalho global `q` (sair) disparava com campo de texto focado, inclusive na busca de reuniões. As telas com campo avisam o App (`onTyping`) e o `q` vira texto.
