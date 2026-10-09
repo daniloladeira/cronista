@@ -23,7 +23,7 @@ function meetingsFromSearchResults(results) {
 
 // Um modo por vez ("list", "detail", "search"), cada useInput ativo só
 // no seu modo pra não competir pela mesma tecla.
-export default function Meetings({ width, height, focused, onBack, initialMeetingId = null, initialSearchTerm = null }) {
+export default function Meetings({ width, height, focused, onBack, onTyping, initialMeetingId = null, initialSearchTerm = null }) {
   const [loading, setLoading] = useState(true);
   const [meetings, setMeetings] = useState([]);
   const [notice, setNotice] = useState(null);
@@ -32,6 +32,14 @@ export default function Meetings({ width, height, focused, onBack, initialMeetin
   const [searchValue, setSearchValue] = useState("");
   const [detail, setDetail] = useState(null); // { meeting, segments } | null
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // Mesmo motivo de screens/Login.js: "q" digitado na busca não pode abrir
+  // a confirmação de saída global do App.
+  const digitando = focused && mode === "search";
+  useEffect(() => {
+    onTyping?.(digitando);
+    return () => onTyping?.(false);
+  }, [digitando, onTyping]);
 
   useEffect(() => {
     let cancelado = false;

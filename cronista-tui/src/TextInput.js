@@ -4,7 +4,7 @@ import { DOURADO } from "./theme.js";
 
 const h = React.createElement;
 
-export default function TextInput({ value, onChange, onSubmit, onCancel, placeholder = "", focused }) {
+export default function TextInput({ value, onChange, onSubmit, onCancel, placeholder = "", focused, prefix = "/ ", mask = false }) {
   useInput(
     (input, key) => {
       if (key.return) {
@@ -39,8 +39,8 @@ export default function TextInput({ value, onChange, onSubmit, onCancel, placeho
   return h(
     Box,
     null,
-    h(Text, { color: DOURADO }, "/ "),
-    value ? h(Text, null, value) : h(Text, { dimColor: true }, placeholder),
+    h(Text, { color: DOURADO }, prefix),
+    value ? h(Text, null, mask ? "•".repeat(value.length) : value) : h(Text, { dimColor: true }, placeholder),
     h(Text, { color: DOURADO }, "▏")
   );
 }

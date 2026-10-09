@@ -35,7 +35,13 @@ export function ConfirmQuit() {
   );
 }
 
-export function footerHints(region) {
+export function footerHints(region, typing = false) {
+  if (typing) {
+    return [
+      { keys: "↵", label: "continuar" },
+      { keys: "Esc", label: "voltar" },
+    ];
+  }
   return region === "sidebar"
     ? [
         { keys: "↑↓", label: "mover" },

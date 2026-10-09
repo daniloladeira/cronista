@@ -13,10 +13,12 @@ export const SECTIONS = [
 export const LAUNCHERS = [
   { key: "gravar", label: "Gravar", kind: "launch", sub: "rec", hint: "cronista rec -- grava até Ctrl+C, sai do Ink" },
   { key: "sincronizar", label: "Sincronizar", kind: "launch", sub: "sync", hint: "cronista sync -- reenvia reuniões pendentes" },
-  { key: "login", label: "Login", kind: "launch", sub: "login", hint: "cronista login -- pede usuário/senha" },
 ];
-export const ITEMS = [...SECTIONS, ...LAUNCHERS];
-const GROUPS = [SECTIONS, LAUNCHERS];
+// Login é tela do próprio Ink (screens/Login.js), mas fica visualmente no
+// grupo de baixo, junto das ações.
+const LOGIN = { key: "login", label: "Login", kind: "section" };
+export const ITEMS = [...SECTIONS, ...LAUNCHERS, LOGIN];
+const GROUPS = [SECTIONS, [...LAUNCHERS, LOGIN]];
 
 const _INDICATOR_WIDTH = 2;
 const _MARGIN_RIGHT = 4;

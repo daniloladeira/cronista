@@ -4,6 +4,7 @@ import Home from "./screens/Home.js";
 import Header from "./screens/Header.js";
 import Sidebar, { ITEMS, SIDEBAR_WIDTH } from "./screens/Sidebar.js";
 import Devices from "./screens/Devices.js";
+import Login from "./screens/Login.js";
 import Meetings from "./screens/Meetings.js";
 import Footer, { footerHints, ConfirmQuit } from "./screens/Footer.js";
 import Spinner from "./Spinner.js";
@@ -11,8 +12,8 @@ import { runPythonCaptured } from "./pythonBridge.js";
 import { DOURADO, NEUTRO, ERRO } from "./theme.js";
 
 // "sync" não precisa do terminal inteiro (sem prompt, sem áudio) -- roda em
-// paralelo ao Ink, sem sair. Os outros launchers (rec, login) continuam
-// saindo: um precisa do terminal pra captura de áudio, o outro pede senha.
+// paralelo ao Ink, sem sair. "rec" continua saindo: precisa do terminal
+// pra captura de áudio. Login é tela do próprio Ink (screens/Login.js).
 const _INLINE_SUBS = new Set(["sync"]);
 
 const h = React.createElement;
@@ -84,6 +85,8 @@ export default function App({ onLaunch, onClearScreen, initialSection = null, in
   // null | "running" | { ok, lines } -- só usado pelos subs de _INLINE_SUBS.
   const [inlineResult, setInlineResult] = useState(null);
   const [confirmingQuit, setConfirmingQuit] = useState(false);
+  // true enquanto uma tela tem um campo de texto focado -- "q" vira texto.
+  const [typing, setTyping] = useState(false);
   // TTY checada uma vez aqui, propagada em todo `focused` -- sem terminal
   // de verdade, o Ink não pode ligar modo raw.
   const interactive = Boolean(stdout.isTTY);
@@ -109,7 +112,7 @@ export default function App({ onLaunch, onClearScreen, initialSection = null, in
         else setConfirmingQuit(false);
         return;
       }
-      if (input === "q") {
+      if (input === "q" && !typing) {
         setConfirmingQuit(true);
         return;
       }
@@ -171,10 +174,18 @@ export default function App({ onLaunch, onClearScreen, initialSection = null, in
             height: panelH,
             focused: interactive && region === "content",
             onBack: () => setRegion("sidebar"),
+            onTyping: setTyping,
             initialMeetingId,
             initialSearchTerm,
           })
-        : h(Devices, { width: w, focused: interactive && region === "content", onBack: () => setRegion("sidebar") });
+        : section === "login"
+          ? h(Login, {
+              width: w,
+              focused: interactive && region === "content",
+              onBack: () => setRegion("sidebar"),
+              onTyping: setTyping,
+            })
+          : h(Devices,{ width: w, focused: interactive && region === "content", onBack: () => setRegion("sidebar") });
 
   return h(
     Box,
@@ -193,6 +204,6 @@ export default function App({ onLaunch, onClearScreen, initialSection = null, in
       }),
       content
     ),
-    h(Box, { marginTop: 1 }, confirmingQuit ? h(ConfirmQuit) : h(Footer, { hints: footerHints(region) }))
+    h(Box, { marginTop: 1 }, confirmingQuit ? h(ConfirmQuit) : h(Footer, { hints: footerHints(region, typing) }))
   );
 }

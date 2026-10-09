@@ -63,6 +63,7 @@ function loadTokens() {
 }
 
 function saveTokens(accessToken, refreshToken) {
+  fs.mkdirSync(path.dirname(tokenPath()), { recursive: true });
   fs.writeFileSync(tokenPath(), JSON.stringify({ access_token: accessToken, refresh_token: refreshToken }));
   _tokensCache = { accessToken, refreshToken };
 }
@@ -110,6 +111,27 @@ async function refresh(refreshToken) {
   if (!resp.ok) throw new ApiError(`Falha ao renovar sessão (HTTP ${resp.status}).`, resp.status);
   const body = await resp.json();
   return body.access_token;
+}
+
+// Mesmo contrato de cronista/client/api_client.py::login, e grava no mesmo
+// auth.json que token_store.py usa.
+export async function login(username, password) {
+  const base = readApiBaseUrl();
+  let resp;
+  try {
+    resp = await fetch(`${base}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+      signal: AbortSignal.timeout(_TIMEOUT_MS),
+    });
+  } catch (err) {
+    throw new ApiError(_mensagemDeFalha(err));
+  }
+  if (resp.status === 401) throw new ApiError("Usuário ou senha incorretos.", 401);
+  if (!resp.ok) throw new ApiError(`Erro na API (HTTP ${resp.status}).`, resp.status);
+  const body = await resp.json();
+  saveTokens(body.access_token, body.refresh_token);
 }
 
 // 401 tenta renovar o token uma vez antes de desistir.
