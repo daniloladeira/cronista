@@ -90,7 +90,7 @@ Duas merecem destaque por serem incomuns:
 
 ## Ambiente
 
-Windows 11, Python 3.13, GPU NVIDIA, Docker Desktop (backend WSL2, com suporte a GPU NVIDIA), Ollama, ffmpeg (`winget install Gyan.FFmpeg`) — este último só é necessário para `cronista importar` (Fase 6).
+Windows 11, Python 3.13, GPU NVIDIA, Docker Desktop (backend WSL2, com suporte a GPU NVIDIA), Ollama, ffmpeg (`winget install Gyan.FFmpeg`). O ffmpeg só é necessário para `cronista importar` (Fase 6).
 
 A captura de loopback foi verificada nesta máquina antes do planejamento. O script está em [`scripts/check_audio.py`](scripts/check_audio.py) e é o primeiro passo de qualquer instalação.
 
