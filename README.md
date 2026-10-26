@@ -94,16 +94,66 @@ Windows 11, Python 3.13, GPU NVIDIA, Docker Desktop (backend WSL2, com suporte a
 
 A captura de loopback foi verificada nesta máquina antes do planejamento. O script está em [`scripts/check_audio.py`](scripts/check_audio.py) e é o primeiro passo de qualquer instalação.
 
-```bash
-python scripts/check_audio.py
+```powershell
+.\.venv\Scripts\python.exe scripts\check_audio.py
 ```
 
-### Subir o ambiente
+Todos os comandos abaixo são do PowerShell, na pasta do projeto. O ambiente virtual tem que se chamar `.venv` e ficar na raiz do repositório: o `cronista-tui` chama `.venv\Scripts\cronista.exe` e `.venv\Scripts\python.exe` por esse caminho.
 
-O banco e o worker rodam no Docker Desktop do Windows, e os comandos abaixo são do PowerShell, na pasta do projeto. Os containers têm `restart: unless-stopped`: depois de subir uma vez, voltam sozinhos quando o Docker Desktop abre.
+### Instalação (primeira vez)
+
+**1. Dependências Python e Node**
+
+```powershell
+py -3.13 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+cd cronista-tui; npm install; cd ..
+```
+
+**2. Configuração.** Copie o modelo e edite o `.env` (ele está no `.gitignore`, nunca vai para o repositório):
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Três valores precisam ser gerados, não inventados:
+
+```powershell
+# JWT_SECRET: segredo aleatório e longo
+.\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_urlsafe(48))"
+
+# AUTH_PASSWORD_HASH: pede a senha duas vezes e imprime o hash Argon2
+.\.venv\Scripts\python.exe scripts\hash_password.py
+```
+
+`DATA_ROOT` é onde fica o áudio. Recomendado: `C:\Users\SEU_USUARIO\AppData\Local\cronista`. Cliente, API e worker leem a mesma raiz.
+
+**3. Banco, worker e esquema**
 
 ```powershell
 docker compose up -d --build
+.\.venv\Scripts\python.exe -m alembic upgrade head
+```
+
+**4. Resumo (Ollama).** Baixe o modelo que estiver em `OLLAMA_MODEL` no `.env`:
+
+```powershell
+ollama pull llama3.1:8b
+```
+
+**5. Token do worker (só se quiser resumo automático).** Grava no `.env` sem mostrar o token, depois recria o worker para ele ler o valor. Ligue também `WORKER_AUTO_SUMMARIZE=true`.
+
+```powershell
+$t = .\.venv\Scripts\python.exe scripts\mint_worker_token.py; (Get-Content .env) -replace '^WORKER_SERVICE_TOKEN=.*', "WORKER_SERVICE_TOKEN=$t" | Set-Content .env -Encoding utf8
+docker compose up -d worker
+```
+
+### Subir o ambiente (todo dia)
+
+O banco e o worker têm `restart: unless-stopped`: voltam sozinhos quando o Docker Desktop abre. Se não voltaram:
+
+```powershell
+docker compose up -d
 ```
 
 **A API não está no compose.** Sobe à parte, e fica rodando em um terminal:
@@ -112,16 +162,45 @@ docker compose up -d --build
 .\.venv\Scripts\python.exe -m uvicorn cronista.api.main:app --host 127.0.0.1 --port 8000
 ```
 
-Para abrir o menu (precisa de `npm install` uma vez em `cronista-tui/`):
+### Usar
+
+Em outro terminal. O menu (`cronista` sem argumentos) abre o `cronista-tui` e cobre Reuniões, Dispositivos, Login, Gravar e Sincronizar. Os comandos diretos servem para script:
 
 ```powershell
-cronista
+cronista                                  # menu
+cronista login                            # autentica (também existe no menu)
+cronista devices                          # microfones e saídas disponíveis
+cronista rec --titulo "Alinhamento"       # grava até Ctrl+C; --mic e --saida escolhem dispositivo
+cronista sync                             # reenvia reuniões gravadas com a API fora do ar
+cronista importar C:\caminho\audio.mp3    # importa áudio ou vídeo (precisa do ffmpeg)
+cronista list                             # lista reuniões
+cronista ler <id>                         # transcrição e resumo
+cronista buscar "decisão"                 # busca com stemming de português
+cronista resumir <id>                     # gera um novo resumo
+cronista reprocessar <id>                 # retranscreve
+cronista excluir <id>                     # apaga áudio e registro, pede confirmação
 ```
 
-Para ver o log do worker, junte os dois fluxos, senão os logs do Python não aparecem:
+Se `cronista` não for reconhecido no PowerShell, use `.\.venv\Scripts\cronista.exe`.
+
+### Diagnóstico
+
+Log do worker. Junte os dois fluxos, senão os logs do Python não aparecem:
 
 ```powershell
 docker logs -f cronista-worker 2>&1
+```
+
+Testes (usam o banco `cronista_test`, criado pelo compose na primeira vez):
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/ -v
+```
+
+Reuniões que falharam e o motivo:
+
+```powershell
+docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "select audio_dir, status, left(error, 200) from meetings where status like ''%failed'';"' 2>$null
 ```
 
 **Esquecer de subir não custa uma reunião.** Gravar não depende de API nem de banco. O áudio vai para o disco e o registro se completa depois, com `cronista sync`. É exatamente o cenário que motivou o [ADR-0012](docs/adr/0012-gravacao-em-disco-antes-da-api.md): ninguém confere container antes de entrar numa reunião.
